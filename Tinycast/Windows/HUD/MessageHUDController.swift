@@ -16,14 +16,13 @@ final class MessageHUDController {
 
     func show(message: String, tone: DialogTone = .success) {
         presenter.show(
-            MessageHUDView(message: message, accessory: .tone(tone)).environment(\.metrics, metrics))
+            content(MessageHUDView(message: message, accessory: .tone(tone))))
     }
 
     /// Stays up until the work it reports ends and something replaces it, or `dismiss()` runs.
     func showProgress(message: String, onCancel: (() -> Void)? = nil) {
         presenter.show(
-            MessageHUDView(message: message, accessory: .progress, onCancel: onCancel)
-                .environment(\.metrics, metrics),
+            content(MessageHUDView(message: message, accessory: .progress, onCancel: onCancel)),
             dwells: false,
             interactive: onCancel != nil)
     }
@@ -32,5 +31,10 @@ final class MessageHUDController {
         presenter.dismiss()
     }
 
-    private var metrics: InterfaceMetrics { settings.interfaceSize.metrics }
+    private func content(_ view: MessageHUDView) -> some View {
+        view.interfaceMetrics(settings, fixedScale: settings.interfaceSize.scale)
+            .onGeometryChange(for: CGSize.self, of: \.size) { [weak self] size in
+                self?.presenter.resize(to: size)
+            }
+    }
 }

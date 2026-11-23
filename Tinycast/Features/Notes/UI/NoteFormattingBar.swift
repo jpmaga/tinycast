@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct NoteFormattingBar: View {
+    @Environment(\.metrics) private var metrics
     @Environment(NotesCoordinator.self) private var notes
 
     private struct Control: Sendable {
@@ -94,7 +95,7 @@ struct NoteFormattingBar: View {
         }
         .padding(Theme.Spacing.xs)
         // Behind the buttons, not around them: glass clips content, tooltips draw outside it.
-        .background { Capsule().fill(Color.clear).frosted(in: Capsule()) }
+        .background { metrics.radius.capsule.fill(Color.clear).frosted(in: metrics.radius.capsule) }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Formatting")
     }

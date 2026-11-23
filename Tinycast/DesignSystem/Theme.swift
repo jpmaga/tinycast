@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Central design tokens; every dark colour is the literal the forced-dark build shipped.
+/// Central design tokens for Tinycast’s default and custom palettes.
 enum Theme {
     /// macOS 26 glass casts its own shadow; on 27 bare glass has none and needs the window's.
     static var glassCastsShadow: Bool {
@@ -416,63 +416,80 @@ enum Theme {
 
     enum Colors {
         /// Resolves against the window's `effectiveAppearance`, so a token repaints on its own.
-        static func adaptive(dark: NSColor, light: NSColor) -> Color {
-            Color(nsColor: NSColor(name: nil) { $0.isDark ? dark : light })
+        static func adaptive(dark: NSColor, light: NSColor, rule: ThemeColorStyle.Rule = .fixed) -> Color {
+            let baseline = Color(nsColor: NSColor(name: nil) { $0.isDark ? dark : light })
+            return Color(ThemeColorStyle(baseline: baseline, rule: rule))
         }
 
         /// The alpha ramp, inverted: white ink over the dark surface, black ink over the light one.
-        static func ramp(dark: Double, light: Double) -> Color {
-            adaptive(dark: .srgbInk(1, alpha: dark), light: .srgbInk(0, alpha: light))
+        static func ramp(dark: Double, light: Double, alternative: ThemeSlot? = nil) -> Color {
+            adaptive(
+                dark: .srgbInk(1, alpha: dark), light: .srgbInk(0, alpha: light),
+                rule: .ink(dark: dark, light: light, alternative: alternative))
         }
 
-        static let panelScrim = adaptive(dark: .srgbInk(0, alpha: 0.40), light: .srgbInk(1, alpha: 0.55))
+        private static func semantic(
+            _ baseline: Color, alternatives: [ThemeSlot], alpha: Double? = nil, customFallback: Color? = nil
+        ) -> Color {
+            Color(ThemeColorStyle(
+                baseline: baseline, rule: .slot(alternatives, alpha: alpha), customFallback: customFallback))
+        }
+
+        static let panelScrim = adaptive(
+            dark: .srgbInk(0, alpha: 0.40), light: .srgbInk(1, alpha: 0.55), rule: .background)
+        static let menuBackground = Color(ThemeColorStyle(baseline: .clear, rule: .menuBackground))
         static let dialogDimming = adaptive(
             dark: .srgbInk(0, alpha: 0.34), light: .srgbInk(0, alpha: 0.34))
         /// Find's marks, the Mac's own yellow: every match faint, the current one solid.
         static let findMatch = adaptive(
             dark: NSColor.systemYellow.withAlphaComponent(0.32),
-            light: NSColor.systemYellow.withAlphaComponent(0.4))
+            light: NSColor.systemYellow.withAlphaComponent(0.4),
+            rule: .slot([.yellow, .accent], alpha: 0.36))
         static let findCurrent = adaptive(
             dark: NSColor.systemYellow.withAlphaComponent(0.9),
-            light: NSColor.systemYellow.withAlphaComponent(0.95))
+            light: NSColor.systemYellow.withAlphaComponent(0.95),
+            rule: .slot([.yellow, .accent], alpha: 0.92))
         /// Black on the solid mark in both appearances, as a highlighter's ink stays readable.
         static let findCurrentInk = adaptive(
-            dark: .srgbInk(0, alpha: 1), light: .srgbInk(0, alpha: 1))
+            dark: .srgbInk(0, alpha: 1), light: .srgbInk(0, alpha: 1),
+            rule: .opposingInk([.yellow, .accent]))
         static let tooltipShadow = adaptive(
             dark: .srgbInk(0, alpha: 0.18), light: .srgbInk(0, alpha: 0.18))
 
         /// Selection fill, shared by every list so they look identical.
-        static let selection = ramp(dark: 0.10, light: 0.09)
+        static let selection = ramp(dark: 0.10, light: 0.09, alternative: .selection)
         static let rowHover = ramp(dark: 0.05, light: 0.045)
         static let emojiCell = ramp(dark: 0.045, light: 0.04)
-        static let emojiHoverBorder = ramp(dark: 0.42, light: 0.34)
-        static let emojiSelectionBorder = ramp(dark: 0.92, light: 0.72)
+        static let emojiHoverBorder = ramp(dark: 0.42, light: 0.34, alternative: .border)
+        static let emojiSelectionBorder = ramp(dark: 0.92, light: 0.72, alternative: .accent)
         static let emojiInnerBorder = adaptive(
-            dark: .srgbInk(0, alpha: 0.72), light: .srgbInk(1, alpha: 0.72))
+            dark: .srgbInk(0, alpha: 0.72), light: .srgbInk(1, alpha: 0.72),
+            rule: .secondaryBackground(alpha: 0.72))
         static let menuHover = ramp(dark: 0.10, light: 0.09)
-        static let separator = ramp(dark: 0.10, light: 0.12)
+        static let separator = ramp(dark: 0.10, light: 0.12, alternative: .border)
         /// Small control surfaces: kbd chips, glyph tiles.
         static let controlSurface = ramp(dark: 0.10, light: 0.08)
         static let controlHover = ramp(dark: 0.16, light: 0.14)
         /// A held control is stronger than hover, so mouse-down always reads.
         static let controlPressed = ramp(dark: 0.24, light: 0.20)
         static let compactShortcutSelectionTint = adaptive(
-            dark: .srgbInk(0.55, alpha: 1), light: .srgbInk(0, alpha: 0.40))
+            dark: .srgbInk(0.55, alpha: 1), light: .srgbInk(0, alpha: 0.40),
+            rule: .slot([.accent], alpha: 0.65))
         static let compactShortcutSelectedInk = adaptive(
-            dark: .srgbInk(1, alpha: 1), light: .srgbInk(1, alpha: 1))
+            dark: .srgbInk(1, alpha: 1), light: .srgbInk(1, alpha: 1), rule: .accentInk())
         /// Control borders: outlined kbd chips.
-        static let border = ramp(dark: 0.20, light: 0.18)
+        static let border = ramp(dark: 0.20, light: 0.18, alternative: .border)
         /// Alpha 1, so a call site can dim it with `.opacity` and land on the value it replaced.
         static let textPrimary = ramp(dark: 1.0, light: 1.0)
-        static let textSecondary = ramp(dark: 0.60, light: 0.60)
-        static let textTertiary = ramp(dark: 0.40, light: 0.42)
-        static let menuSymbol = ramp(dark: 0.70, light: 0.70)
+        static let textSecondary = ramp(dark: 0.60, light: 0.60, alternative: .muted)
+        static let textTertiary = ramp(dark: 0.40, light: 0.42, alternative: .placeholder)
+        static let menuSymbol = ramp(dark: 0.70, light: 0.70, alternative: .muted)
         static let noteText = ramp(dark: 0.90, light: 0.85)
         static let iconPlaceholder = ramp(dark: 0.06, light: 0.06)
         static let sheen = ramp(dark: 0.04, light: 0.04)
         /// The Settings card: a faint surface whose border doubles as the row divider.
         static let cardFill = ramp(dark: 0.05, light: 0.04)
-        static let cardStroke = ramp(dark: 0.10, light: 0.10)
+        static let cardStroke = ramp(dark: 0.10, light: 0.10, alternative: .border)
         /// A window on the preview's plate. White in both, since the plate is always dark.
         static let layoutPreviewWindow = adaptive(
             dark: .srgbInk(1, alpha: 0.22), light: .srgbInk(1, alpha: 0.28))
@@ -487,50 +504,88 @@ enum Theme {
             dark: .srgbInk(0, alpha: 0.18), light: .srgbInk(0, alpha: 0.18))
         /// A room card is a solid window in both appearances, so the desk never shows through.
         static let roomCardFill = adaptive(
-            dark: .srgbInk(0.16, alpha: 0.94), light: .srgbInk(0.98, alpha: 0.94))
-        static let roomCardStroke = Color.accentColor
+            dark: .srgbInk(0.16, alpha: 0.94), light: .srgbInk(0.98, alpha: 0.94),
+            rule: .secondaryBackground(alpha: 0.94))
+        static let roomCardStroke = semantic(Color.accentColor, alternatives: [.accent])
         static let roomCardShadow = adaptive(
             dark: .srgbInk(0, alpha: 0.25), light: .srgbInk(0, alpha: 0.25))
         static let roomCardDot = ramp(dark: 0.25, light: 0.25)
-        static let searchFlash = Color.accentColor.opacity(0.35)
+        static let searchFlash = semantic(Color.accentColor.opacity(0.35), alternatives: [.accent], alpha: 0.35)
         static let checkerLight = Color(nsColor: .srgbInk(1, alpha: 0.22))
         static let checkerDark = Color(nsColor: .srgbInk(0, alpha: 0.22))
         /// The violet of the app mark, used only to tint the About support callout.
         static let brand = Color(red: 0.525, green: 0.231, blue: 1.0)
         /// The palette's drop guides while dragging, and once a release would snap it home.
         static let dropGuide = ramp(dark: 0.35, light: 0.35)
-        static let dropGuideArmed = Color.blue
+        static let dropGuideArmed = semantic(
+            Color.blue, alternatives: [.accent], customFallback: .accentColor)
         /// A dialog's standard default action; destructive defaults keep their semantic red.
-        static let primaryAction = Color.blue
-        static let destructive = Color.red
-        static let success = Color.green
-        static let warning = Color.orange
-        static let composerSend = ramp(dark: 0.92, light: 0.92)
-        static let composerSendInk = adaptive(dark: .srgbInk(0, alpha: 0.85), light: .srgbInk(1, alpha: 1))
+        static let primaryAction = semantic(
+            Color.blue, alternatives: [.accent], customFallback: .accentColor)
+        static let destructive = semantic(Color.red, alternatives: [.danger, .red])
+        static let success = semantic(Color.green, alternatives: [.success, .green])
+        static let warning = semantic(Color.orange, alternatives: [.warning, .orange, .yellow])
+        static let composerSend = ramp(dark: 0.92, light: 0.92, alternative: .accent)
+        static let composerSendInk = adaptive(
+            dark: .srgbInk(0, alpha: 0.85), light: .srgbInk(1, alpha: 1),
+            rule: .accentInk(foregroundFallback: true))
         /// The window's own page, for a card that must hide the transcript it floats over.
-        static let windowSurface = Color(nsColor: .windowBackgroundColor)
-        static let dropTarget = Color.accentColor
+        static let windowSurface = adaptive(
+            dark: .windowBackgroundColor, light: .windowBackgroundColor,
+            rule: .secondaryBackground(alpha: 1))
+        static let dropTarget = semantic(Color.accentColor, alternatives: [.accent])
         /// Progress tint: the message pill's spinner while the work behind it is still running.
-        static let progress = Color.blue
+        static let progress = semantic(
+            Color.blue, alternatives: [.accent], customFallback: .accentColor)
         /// The command output window's page: a flat surface the log sits directly on.
         static let terminalSurface = adaptive(
-            dark: .srgbInk(0.07, alpha: 1), light: .srgbInk(0.99, alpha: 1))
+            dark: .srgbInk(0.07, alpha: 1), light: .srgbInk(0.99, alpha: 1),
+            rule: .secondaryBackground(alpha: 1))
+
+        static let dragPreviewInk = adaptive(
+            dark: .labelColor, light: .labelColor,
+            rule: .ink(dark: 1, light: 1, alternative: nil))
+        static let caretInk = adaptive(
+            dark: .srgbInk(1, alpha: 1), light: .srgbInk(1, alpha: 1),
+            rule: .ink(dark: 1, light: 1, alternative: nil))
+        static let controlAccent = semantic(Color.accentColor, alternatives: [.accent])
+        static let accentInk = adaptive(
+            dark: .srgbInk(1, alpha: 1), light: .srgbInk(1, alpha: 1), rule: .accentInk())
+        static let linkInk = adaptive(
+            dark: .linkColor, light: .linkColor, rule: .slot([.blue, .accent]))
+        static let tooltipSurface = adaptive(
+            dark: .windowBackgroundColor, light: .windowBackgroundColor,
+            rule: .secondaryBackground(alpha: 1))
+        static let dragPreviewSurface = adaptive(
+            dark: .controlBackgroundColor, light: .controlBackgroundColor,
+            rule: .secondaryBackground(alpha: 1))
 
         enum Syntax {
-            static let keyword = pair(dark: 0xFC5FA3, light: 0xAD3DA4)
-            static let string = pair(dark: 0xFC6A5D, light: 0xD12F1B)
-            static let number = pair(dark: 0xD0BF69, light: 0x272AD8)
-            static let comment = pair(dark: 0x7F8C98, light: 0x5D6C79)
-            static let type = pair(dark: 0x5DD8FF, light: 0x1F7A85)
-            static let function = pair(dark: 0x67B7A4, light: 0x2B6A72)
-            static let constant = pair(dark: 0xD0A8FF, light: 0x6C36A9)
-            static let attribute = pair(dark: 0xFD8F3F, light: 0x78492A)
-            static let property = pair(dark: 0x6BBCDD, light: 0x0F68A0)
-            static let inserted = pair(dark: 0x67D97E, light: 0x1F7F3A)
-            static let deleted = pair(dark: 0xFC6A5D, light: 0xC0301F)
+            static let keyword = pair(
+                dark: 0xFC5FA3, light: 0xAD3DA4, slots: [.syntaxKeyword, .magenta, .purple, .accent])
+            static let string = pair(
+                dark: 0xFC6A5D, light: 0xD12F1B, slots: [.syntaxString, .green, .accent])
+            static let number = pair(
+                dark: 0xD0BF69, light: 0x272AD8, slots: [.syntaxNumber, .orange, .yellow, .accent])
+            static let comment = pair(
+                dark: 0x7F8C98, light: 0x5D6C79, slots: [.syntaxComment, .muted])
+            static let type = pair(
+                dark: 0x5DD8FF, light: 0x1F7A85, slots: [.syntaxType, .cyan, .blue, .accent])
+            static let function = pair(
+                dark: 0x67B7A4, light: 0x2B6A72, slots: [.syntaxFunction, .blue, .cyan, .accent])
+            static let constant = pair(
+                dark: 0xD0A8FF, light: 0x6C36A9, slots: [.syntaxConstant, .purple, .magenta, .accent])
+            static let attribute = pair(
+                dark: 0xFD8F3F, light: 0x78492A, slots: [.syntaxAttribute, .orange, .yellow, .accent])
+            static let property = pair(
+                dark: 0x6BBCDD, light: 0x0F68A0, slots: [.syntaxProperty, .cyan, .blue, .accent])
+            static let inserted = pair(
+                dark: 0x67D97E, light: 0x1F7F3A, slots: [.syntaxInserted, .success, .green])
+            static let deleted = pair(
+                dark: 0xFC6A5D, light: 0xC0301F, slots: [.syntaxDeleted, .danger, .red])
 
-            private static func pair(dark: UInt32, light: UInt32) -> Color {
-                adaptive(dark: rgb(dark), light: rgb(light))
+            private static func pair(dark: UInt32, light: UInt32, slots: [ThemeSlot]) -> Color {
+                adaptive(dark: rgb(dark), light: rgb(light), rule: .slot(slots))
             }
         }
     }
@@ -619,6 +674,6 @@ enum Theme {
 
 extension View {
     func frosted(in shape: some Shape) -> some View {
-        glassEffect(.regular.interactive(), in: shape)
+        themedGlass(.regular.interactive(), in: shape, tinted: true, fallback: Theme.Colors.menuBackground)
     }
 }

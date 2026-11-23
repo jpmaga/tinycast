@@ -53,7 +53,7 @@ struct CalculatorCard: View {
                         .foregroundStyle(.tertiary)
                     LeadCardColumn(
                         text: CalcSyntax.highlighted(display), badge: result.targetBadge,
-                        weight: .semibold)
+                        isProminent: true)
                 }
                 .fixedSize(horizontal: false, vertical: true)
             case .error(let message):
@@ -63,7 +63,7 @@ struct CalculatorCard: View {
                     Text(message)
                         .lineLimit(1)
                 }
-                .font(.body)
+                .font(metrics.typography.rowTitle)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity)
             }

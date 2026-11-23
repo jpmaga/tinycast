@@ -35,12 +35,19 @@ struct LeadCardColumn: View {
     @Environment(\.metrics) private var metrics
     let text: AttributedString
     let badge: String?
-    var weight: Font.Weight = .medium
+    var isProminent = false
+
+    private var resultFont: Font {
+        if isProminent {
+            return metrics.typography.font(Theme.Typography.calcResult.weight(.semibold), .title1, weight: .semibold)
+        }
+        return metrics.typography.font(Theme.Typography.calcResult.weight(.medium), .title1, weight: .medium)
+    }
 
     var body: some View {
         VStack(spacing: metrics.spacing.md) {
             Text(text)
-                .font(metrics.typography.calcResult.weight(weight))
+                .font(resultFont)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
             if let badge { LeadCardBadge(text: badge) }

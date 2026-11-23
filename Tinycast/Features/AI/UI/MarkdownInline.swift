@@ -15,6 +15,7 @@ enum MarkdownInline {
         return text
     }
 
+    @MainActor
     static func headingFont(_ level: Int, _ metrics: InterfaceMetrics) -> Font {
         switch level {
         case 1: metrics.typography.markdownHeading1

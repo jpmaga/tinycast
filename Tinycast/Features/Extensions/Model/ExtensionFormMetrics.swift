@@ -7,6 +7,7 @@ struct ExtensionFormMetrics {
 
     /// Owned here rather than in `DesignSystem`: an extension never moves a launcher surface.
     let scale: CGFloat
+    var cornerMultiplier: CGFloat = 1
 
     /// One control's width and height, in the proportions an extension's form is authored against.
     var controlWidth: CGFloat {
@@ -15,7 +16,7 @@ struct ExtensionFormMetrics {
         return panelWidth - labelWidth * 2 - scaled(28) * 4 - scaled(20) * 2
     }
     var controlHeight: CGFloat { scaled(28) + scaled(6) }
-    var controlCornerRadius: CGFloat { scaled(12) }
+    var controlCornerRadius: CGFloat { (12 * scale * cornerMultiplier).rounded() }
     var focusStrokeWidth: CGFloat { scaled(2) }
 
     /// Fits label beside centred control.

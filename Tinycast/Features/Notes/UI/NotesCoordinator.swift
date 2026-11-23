@@ -93,6 +93,7 @@ final class NotesCoordinator {
 
     var activeTitle: String { store.activeTitle }
     var rendersMarkdown: Bool { settings.notesRendersMarkdown }
+    var interfaceMetrics: InterfaceMetrics { settings.interfaceMetrics(at: 1) }
     var showsFormattingBar: Bool { settings.notesRendersMarkdown && settings.notesShowsFormattingBar }
     var isSearching: Bool { store.isSearching }
     var visibleNotes: [NoteSummary] {
@@ -438,6 +439,10 @@ final class NotesCoordinator {
     func noteWindowMouseDown() {
         headingMenuWasOpenAtPress = isHeadingMenuPresented
         closeHeadingMenu()
+    }
+
+    func refreshWindowShadow() {
+        windowController.refreshShadow()
     }
 
     func editorReady(_ textView: NoteTextView) {

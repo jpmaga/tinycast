@@ -25,7 +25,7 @@ final class HUDPresenter {
     func show(_ view: some View, size: CGSize? = nil, dwells: Bool = true, interactive: Bool = false) {
         let panel = panel ?? make(acceptsMouseEvents: interactive)
         panel.ignoresMouseEvents = !interactive
-        let host = NSHostingView(rootView: view.motionScope())
+        let host = NSHostingView(rootView: view.motionScope().themeScope())
         // Never size from `host.frame` after attaching: AppKit resets it to the content rect.
         let content = size ?? host.fittingSize
         host.setFrameSize(content)
@@ -39,6 +39,16 @@ final class HUDPresenter {
             panel.fadeIn(duration: Theme.Duration.enter) { panel.orderFrontRegardless() }
         }
         if dwells { scheduleDismissal() } else { dismissal?.cancel() }
+    }
+
+    func resize(to size: CGSize) {
+        guard size.width > 0, size.height > 0, let panel, panel.isVisible,
+            panel.contentRect(forFrameRect: panel.frame).size != size
+        else { return }
+        let frame = panel.frame
+        panel.setContentSize(size)
+        panel.setFrameOrigin(NSPoint(x: frame.midX - size.width / 2, y: frame.minY))
+        panel.invalidateShadow()
     }
 
     func dismiss() {

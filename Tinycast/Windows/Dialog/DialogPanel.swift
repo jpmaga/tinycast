@@ -19,7 +19,10 @@ final class DialogPanel: NSPanel, AnimatedPanel {
     var handlesTabKey = false
     var acceptsLineBreaks = false
 
-    init(content: NSView, cornerRadius: CGFloat) {
+    let interfaceScale: CGFloat
+
+    init(content: NSView, metrics: InterfaceMetrics) {
+        interfaceScale = metrics.scale
         super.init(
             contentRect: NSRect(origin: .zero, size: content.frame.size),
             styleMask: [.borderless, .fullSizeContentView, .nonactivatingPanel],
@@ -38,7 +41,7 @@ final class DialogPanel: NSPanel, AnimatedPanel {
         followMotion()
         isReleasedWhenClosed = false
         content.wantsLayer = true
-        content.layer?.cornerRadius = cornerRadius
+        content.layer?.cornerRadius = metrics.radius.panel
         content.layer?.cornerCurve = .continuous
         content.layer?.masksToBounds = true
         contentView = content

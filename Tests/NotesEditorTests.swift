@@ -25,8 +25,10 @@ struct NotesEditorTests {
         testHiddenBulletCaret()
         testRestyleFollowsEdits()
         testRenderingOffIsLiteral()
+        testFontChangesRestyleTheOpenNote()
         testTaskSpacing()
         testBlockDecorationsAndFragments()
+        testThemeRestylesBlockDecorations()
         testListMarkersWaitForSpace()
         testListKeysAndChords()
         testFormattingReports()
@@ -376,8 +378,8 @@ struct NotesEditorTests {
         editor.textView.setSelectedRange(NSRange(location: (everyConstruct as NSString).length, length: 0))
         check("a selection-driven restyle registers no Undo", !undo.canUndo && changes.isEmpty)
 
-        editor.coordinator.setRendersMarkdown(false)
-        editor.coordinator.setRendersMarkdown(true)
+        editor.coordinator.updateAppearance(rendersMarkdown: false, metrics: .standard)
+        editor.coordinator.updateAppearance(rendersMarkdown: true, metrics: .standard)
         check(
             "toggling rendering keeps the source and registers no Undo",
             editor.textView.string == everyConstruct && !undo.canUndo && changes.isEmpty)
@@ -405,7 +407,7 @@ struct NotesEditorTests {
         let revealedColor = color(in: editor.textView, at: marker)
         check(
             "the caret's line shows its markers at body size in a dimmed colour",
-            font(in: editor.textView, at: marker)?.pointSize == NoteMarkdownTypography.body.pointSize
+            font(in: editor.textView, at: marker)?.pointSize == NoteMarkdownTypography.standard.body.pointSize
                 && revealedColor != nil && revealedColor != NSColor.clear
                 && revealedColor != color(in: editor.textView, at: content))
 
@@ -416,8 +418,8 @@ struct NotesEditorTests {
         let typing = editor.textView.typingAttributes
         check(
             "typing attributes return to the body style after leaving a heading",
-            typing[.font] as? NSFont == NoteMarkdownTypography.body
-                && typing.count == NoteMarkdownStyler.literal.count)
+            typing[.font] as? NSFont == NoteMarkdownTypography.standard.body
+                && typing.count == NoteMarkdownStyler(metrics: .standard).literal.count)
 
         editor.window.makeFirstResponder(nil)
         check(
@@ -556,7 +558,7 @@ struct NotesEditorTests {
         let bold = (editor.textView.string as NSString).range(of: "**b**").location
         check(
             "opening a fence above text restyles the lines below as code",
-            font(in: editor.textView, at: bold) == NoteMarkdownTypography.codeBlock
+            font(in: editor.textView, at: bold) == NoteMarkdownTypography.standard.codeBlock
                 && decoration(in: editor.textView, at: bold) != nil)
 
         editor.textView.setSelectedRange(NSRange(location: 4, length: 0))
@@ -594,26 +596,48 @@ struct NotesEditorTests {
         let code = (editor.textView.string as NSString).range(of: "`a`").location
         check(
             "typing a delimiter row turns every row into a literal monospaced table",
-            font(in: editor.textView, at: code) == NoteMarkdownTypography.codeBlock
-                && font(in: editor.textView, at: lastRow()) == NoteMarkdownTypography.codeBlock
+            font(in: editor.textView, at: code) == NoteMarkdownTypography.standard.codeBlock
+                && font(in: editor.textView, at: lastRow()) == NoteMarkdownTypography.standard.codeBlock
                 && editor.textView.string.contains("| `c` | d |"))
     }
 
     private static func testRenderingOffIsLiteral() {
         let input = NoteEditorInput(id: NoteID(rawValue: "Off.md"), source: everyConstruct, epoch: 1)
         let editor = makeEditor(input: input, rendersMarkdown: true)
-        editor.coordinator.setRendersMarkdown(false)
+        editor.coordinator.updateAppearance(rendersMarkdown: false, metrics: .standard)
         var literal = true
         let storage = editor.textView.textStorage ?? NSTextStorage()
         storage.enumerateAttributes(in: NSRange(location: 0, length: storage.length)) { attributes, _, _ in
             literal =
                 literal && attributes.count == 2
-                && attributes[.font] as? NSFont == NoteMarkdownTypography.body
+                && attributes[.font] as? NSFont == NoteMarkdownTypography.standard.body
                 && attributes[.noteBlockDecoration] == nil
         }
         check("rendering off leaves exactly the literal attributes", literal)
         editor.textView.setSelectedRange(NSRange(location: 3, length: 0))
         check("rendering off never reveals or parses", editor.coordinator.renderer.markdown.lines.isEmpty)
+    }
+
+    private static func testFontChangesRestyleTheOpenNote() {
+        let input = NoteEditorInput(id: NoteID(rawValue: "typography"), source: "# Title\nBody with `code`", epoch: 0)
+        let editor = makeEditor(input: input, rendersMarkdown: true)
+        let textView = editor.textView
+        let selection = NSRange(location: 10, length: 0)
+        textView.setSelectedRange(selection)
+
+        editor.coordinator.updateAppearance(
+            rendersMarkdown: true, metrics: InterfaceMetrics(fontFamily: "Avenir Next", cornerMultiplier: 0))
+        check("changing the preference restyles the existing heading", font(in: textView, at: 2)?.fontName == "AvenirNext-Bold")
+        check("the body takes the new family at the one-step-larger size",
+              font(in: textView, at: 8)?.familyName == "Avenir Next"
+                  && font(in: textView, at: 8)?.pointSize == NoteMarkdownTypography.standard.body.pointSize)
+        check("inline code keeps its system monospaced face", font(in: textView, at: 18)?.isFixedPitch == true)
+        check("a restyle leaves the source and selection in place",
+              textView.string == input.source && textView.selectedRange() == selection)
+        check("a restyle adds no undo action", !editor.coordinator.editorUndoManager.canUndo)
+
+        editor.coordinator.updateAppearance(rendersMarkdown: true, metrics: .standard)
+        check("switching back restores the system face", font(in: textView, at: 8) == NoteMarkdownTypography.standard.body)
     }
 
     private static func testTaskSpacing() {
@@ -634,7 +658,7 @@ struct NotesEditorTests {
                 let line = (fragment as? NoteBlockLayoutFragment)?.firstLine ?? .zero
                 return NoteCheckboxGeometry.rect(
                     level: 0, firstLineHeight: line.height,
-                    bodyPointSize: NoteMarkdownTypography.body.pointSize
+                    bodyPointSize: NoteMarkdownTypography.standard.body.pointSize
                 ).offsetBy(dx: 0, dy: fragment.layoutFragmentFrame.minY + line.minY)
             }
             check("task checkboxes have breathing room", box(bottom).minY - box(top).maxY >= Theme.Spacing.md)
@@ -667,7 +691,7 @@ struct NotesEditorTests {
             decoration(in: editor.textView, at: 8)?.shape == .bullet(level: 0))
         check(
             "an empty bullet keeps normal text metrics",
-            font(in: editor.textView, at: 8) == NoteMarkdownTypography.body)
+            font(in: editor.textView, at: 8) == NoteMarkdownTypography.standard.body)
         check("an empty bullet keeps list spacing", style(at: 8)?.paragraphSpacing == Theme.Spacing.md)
         editor.textView.setSelectedRange(NSRange(location: 10, length: 0))
         check(
@@ -766,12 +790,33 @@ struct NotesEditorTests {
             let firstLine = task.firstLine
             let box = NoteCheckboxGeometry.rect(
                 level: 0, firstLineHeight: firstLine.height,
-                bodyPointSize: NoteMarkdownTypography.body.pointSize)
+                bodyPointSize: NoteMarkdownTypography.standard.body.pointSize)
             let surface = task.renderingSurfaceBounds.offsetBy(dx: task.layoutFragmentFrame.minX, dy: 0)
             check("the checkbox lies inside the task's drawing surface", surface.contains(box))
         } else {
             check("the checkbox lies inside the task's drawing surface", false)
         }
+    }
+
+    private static func testThemeRestylesBlockDecorations() {
+        let input = NoteEditorInput(id: NoteID(rawValue: "Theme.md"), source: "A paragraph\n> Quoted", epoch: 0)
+        let editor = makeEditor(input: input, rendersMarkdown: true)
+        let quote = (input.source as NSString).range(of: ">").location
+        let before = decoration(in: editor.textView, at: quote)?.fill
+        let selection = editor.textView.selectedRange()
+        let border = ThemeColor(rgb: 0x27A167)
+        let palettes = ThemePresentation(
+            dark: ThemePalette(variant: .dark, isBaseline: false, overrides: [.border: border]),
+            light: ThemePalette(variant: .light, isBaseline: false, overrides: [.border: border]))
+        ThemeRendering.shared.apply(palettes)
+        defer { ThemeRendering.shared.apply(ThemePresentation()) }
+
+        editor.coordinator.applyTheme(palettes)
+        let after = decoration(in: editor.textView, at: quote)?.fill.usingColorSpace(.sRGB)
+        let expected = NSColor(border.swiftUI).usingColorSpace(.sRGB)
+        check("a theme switch repaints the pinned quote colour", after == expected && after != before)
+        check("restyling preserves the source and selection",
+            editor.textView.string == input.source && editor.textView.selectedRange() == selection)
     }
 
     private static func testListMarkersWaitForSpace() {
@@ -855,7 +900,7 @@ struct NotesEditorTests {
                 && editor.textView.string == "> code")
         undo.undo()
 
-        editor.coordinator.setRendersMarkdown(false)
+        editor.coordinator.updateAppearance(rendersMarkdown: false, metrics: .standard)
         let literal = editor.textView.string
         editor.textView.setSelectedRange(NSRange(location: 2, length: 4))
         let claimed = editor.textView.performKeyEquivalent(
@@ -888,7 +933,7 @@ struct NotesEditorTests {
         editor.coordinator.editorUndoManager.undo()
         check("format(_:) undoes in one step", editor.textView.string == "plain **bold**")
 
-        editor.coordinator.setRendersMarkdown(false)
+        editor.coordinator.updateAppearance(rendersMarkdown: false, metrics: .standard)
         check("rendering off reports plain", reports.last?.1 == .plain)
         editor.textView.format(.toggleQuote)
         check("format(_:) does nothing with rendering off", editor.textView.string == "plain **bold**")
@@ -1021,7 +1066,7 @@ struct NotesEditorTests {
         editor.textView.insertText("new", replacementRange: editor.textView.selectedRange())
         check(
             "typing after a checkbox stays visible",
-            color(in: editor.textView, at: 6) == NoteMarkdownStyler.literal[.foregroundColor] as? NSColor)
+            color(in: editor.textView, at: 6) == NoteMarkdownStyler(metrics: .standard).literal[.foregroundColor] as? NSColor)
         editor.textView.selectAll(nil)
         editor.textView.insertText("```\n[]", replacementRange: editor.textView.selectedRange())
         editor.textView.insertText(" ", replacementRange: editor.textView.selectedRange())
@@ -1105,7 +1150,7 @@ struct NotesEditorTests {
 
         let text = task.textLineFragments[1].typographicBounds
         let box = NoteCheckboxGeometry.rect(
-            level: 0, firstLineHeight: text.height, bodyPointSize: NoteMarkdownTypography.body.pointSize)
+            level: 0, firstLineHeight: text.height, bodyPointSize: NoteMarkdownTypography.standard.body.pointSize)
         let lowerEdge = CGPoint(x: box.midX, y: task.layoutFragmentFrame.minY + text.minY + box.maxY - 1)
         check(
             "a checkbox under a long first word clicks where it is drawn",
@@ -1119,7 +1164,7 @@ struct NotesEditorTests {
         }
         let firstLine = fragment.firstLine
         let box = NoteCheckboxGeometry.rect(
-            level: 0, firstLineHeight: firstLine.height, bodyPointSize: NoteMarkdownTypography.body.pointSize)
+            level: 0, firstLineHeight: firstLine.height, bodyPointSize: NoteMarkdownTypography.standard.body.pointSize)
         return CGPoint(x: box.midX, y: fragment.layoutFragmentFrame.minY + firstLine.minY + box.midY)
     }
 

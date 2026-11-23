@@ -131,7 +131,7 @@ private struct CalcHistoryRow: View {
                 .truncationMode(.tail)
             Spacer(minLength: metrics.spacing.xl)
             Text(format.localized(entry.result))
-                .font(metrics.typography.rowTitle.weight(.semibold))
+                .font(metrics.typography.font(Theme.Typography.rowTitle.weight(.semibold), .body, weight: .semibold))
                 .lineLimit(1)
         }
         .padding(.horizontal, metrics.spacing.md)

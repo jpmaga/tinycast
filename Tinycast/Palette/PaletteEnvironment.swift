@@ -3,17 +3,23 @@ import SwiftUI
 /// A stored environment value would freeze at panel-build time; a body re-reads under Observation.
 private struct InterfaceMetricsScope: ViewModifier {
     let settings: AppSettings
+    let fixedScale: CGFloat?
 
     func body(content: Content) -> some View {
-        content.environment(\.metrics, settings.interfaceSize.metrics)
+        let metrics = fixedScale.map { settings.interfaceMetrics(at: $0) } ?? settings.interfaceMetrics
+        return content.environment(\.metrics, metrics)
     }
 }
 
 extension View {
+    func interfaceMetrics(_ settings: AppSettings, fixedScale: CGFloat? = nil) -> some View {
+        modifier(InterfaceMetricsScope(settings: settings, fixedScale: fixedScale))
+    }
+
     /// Shared, so the ⌘K menu's own hosted hierarchy cannot drift from the palette's.
     func paletteEnvironment(_ core: AppCore) -> some View {
         self
-            .modifier(InterfaceMetricsScope(settings: core.settings))
+            .interfaceMetrics(core.settings)
             .environment(core)
             .environment(core.settings)
             .environment(core.palette)

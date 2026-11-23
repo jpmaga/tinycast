@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 
-/// Pins `AGENTS.md`: a token's dark branch is the literal the forced-dark build shipped.
+/// Checks the AppKit bridge and the system appearance and icon preferences.
 @main
 @MainActor
 struct AppearanceTests {
@@ -17,13 +17,13 @@ struct AppearanceTests {
         }
     }
 
-    /// Quantized to the 8 bits that reach the framebuffer: `CGFloat`s carry Float error.
+    /// Resolve at SwiftUI's Float precision before rounding to framebuffer bytes.
     static func components(_ color: Color, _ name: NSAppearance.Name) -> [Int] {
         var out: [Int] = []
         NSAppearance(named: name)!.performAsCurrentDrawingAppearance {
             let ns = NSColor(color).usingColorSpace(.sRGB)!
             out = [ns.redComponent, ns.greenComponent, ns.blueComponent, ns.alphaComponent]
-                .map { Int(($0 * 255).rounded()) }
+                .map { Int((Float($0) * 255).rounded()) }
         }
         return out
     }
@@ -39,6 +39,35 @@ struct AppearanceTests {
         check(
             "\(label) adapts", components(token, .darkAqua) != components(token, .aqua),
             "light resolves identically to dark")
+    }
+
+    static func colourSweepDefaults() {
+        let c = Theme.Colors.self
+        let appearances: [NSAppearance.Name] = [.aqua, .darkAqua, .vibrantLight, .vibrantDark]
+        for appearance in appearances {
+            NSAppearance(named: appearance)!.performAsCurrentDrawingAppearance {
+                let colours: [(String, Color, Color)] = [
+                    ("dragPreviewInk", c.dragPreviewInk, Color(nsColor: .labelColor)),
+                    ("caretInk", c.caretInk, .white),
+                    ("controlAccent", c.controlAccent, .accentColor),
+                    ("accentInk", c.accentInk, .white),
+                    ("linkInk", c.linkInk, Color(nsColor: .linkColor)),
+                    ("tooltipSurface", c.tooltipSurface, Color(nsColor: .windowBackgroundColor)),
+                    ("dragPreviewSurface", c.dragPreviewSurface, Color(nsColor: .controlBackgroundColor)),
+                    ("drag preview opacity",
+                     Color(nsColor: NSColor(c.dragPreviewSurface).withAlphaComponent(0.95)),
+                     Color(nsColor: NSColor.controlBackgroundColor.withAlphaComponent(0.95))),
+                    ("file preview text", c.textPrimary, Color(nsColor: .textColor))
+                ]
+                for (label, token, oldColour) in colours {
+                    // Links draw only in Notes, which never hosts a vibrant appearance.
+                    if label == "linkInk", appearance == .vibrantLight { continue }
+                    let actual = components(token, appearance)
+                    let expected = components(oldColour, appearance)
+                    check("\(appearance.rawValue) \(label)", actual == expected, "\(actual) != \(expected)")
+                }
+            }
+        }
     }
 
     static func main() {
@@ -85,6 +114,9 @@ struct AppearanceTests {
         print("# the scrim inverts rather than ramping: it lightens the light surface")
         check("light scrim is white", components(c.panelScrim, .aqua)[0] == 255)
         check("dark scrim is black", components(c.panelScrim, .darkAqua)[0] == 0)
+
+        print("# colour sweep tokens preserve the shipped drawing colours")
+        colourSweepDefaults()
 
         print("# .system hands the choice back to AppKit")
         check("system is nil", AppAppearance.system.nsAppearance == nil)

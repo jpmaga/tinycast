@@ -220,6 +220,22 @@ final class AppSettings {
         didSet { defaults.set(appearance.rawValue, forKey: Key.appearance.rawValue) }
     }
 
+    var darkTheme: String {
+        didSet { defaults.set(darkTheme, forKey: Key.darkTheme.rawValue) }
+    }
+
+    var lightTheme: String {
+        didSet { defaults.set(lightTheme, forKey: Key.lightTheme.rawValue) }
+    }
+
+    var windowOpacity: Double? {
+        didSet { defaults.set(windowOpacity, forKey: Key.windowOpacity.rawValue) }
+    }
+
+    var windowBlur: Bool {
+        didSet { defaults.set(windowBlur, forKey: Key.windowBlur.rawValue) }
+    }
+
     /// The per-app key System Settings writes too, so the two never disagree.
     var language: AppLanguage {
         didSet { defaults.set([language.rawValue], forKey: Key.language.rawValue) }
@@ -230,7 +246,21 @@ final class AppSettings {
         didSet { defaults.set(calcNumberStyle.rawValue, forKey: Key.calcNumberStyle.rawValue) }
     }
 
-    /// Scales the palette and its floating siblings only. Read through `InterfaceSize.metrics`.
+    var interfaceFont: String {
+        didSet { defaults.set(interfaceFont, forKey: Key.interfaceFont.rawValue) }
+    }
+
+    var interfaceCornerRadius: InterfaceCornerRadius {
+        didSet { defaults.set(interfaceCornerRadius.rawValue, forKey: Key.interfaceCornerRadius.rawValue) }
+    }
+
+    var interfaceMetrics: InterfaceMetrics { interfaceMetrics(at: interfaceSize.scale) }
+
+    func interfaceMetrics(at scale: CGFloat) -> InterfaceMetrics {
+        InterfaceMetrics(
+            scale: scale, fontFamily: interfaceFont, cornerMultiplier: interfaceCornerRadius.multiplier)
+    }
+
     var interfaceSize: InterfaceSize {
         didSet {
             defaults.set(interfaceSize.rawValue, forKey: Key.interfaceSize.rawValue)
@@ -738,9 +768,15 @@ final class AppSettings {
         case .popToRootTimeout: adopt(\.popToRootTimeout, from: stored)
         case .escapeKeyBehavior: adopt(\.escapeKeyBehavior, from: stored)
         case .appearance: adopt(\.appearance, from: stored)
+        case .darkTheme: adopt(\.darkTheme, from: stored)
+        case .lightTheme: adopt(\.lightTheme, from: stored)
+        case .windowOpacity: adopt(\.windowOpacity, from: stored)
+        case .windowBlur: adopt(\.windowBlur, from: stored)
         case .language: adopt(\.language, from: stored)
         case .calcNumberStyle: adopt(\.calcNumberStyle, from: stored)
         case .interfaceSize: adopt(\.interfaceSize, from: stored)
+        case .interfaceFont: adopt(\.interfaceFont, from: stored)
+        case .interfaceCornerRadius: adopt(\.interfaceCornerRadius, from: stored)
         case .compactMode: adopt(\.compactMode, from: stored)
         case .compactBarCommands: adopt(\.compactBarCommands, from: stored)
         case .searchScopes: adopt(\.searchScopes, from: stored)
@@ -904,10 +940,19 @@ final class AppSettings {
             ?? .navigateBackOrClose
         appearance =
             defaults.string(forKey: Key.appearance.rawValue).flatMap(AppAppearance.init) ?? .system
+        darkTheme = defaults.string(forKey: Key.darkTheme.rawValue) ?? ThemeVariant.dark.defaultID
+        lightTheme = defaults.string(forKey: Key.lightTheme.rawValue) ?? ThemeVariant.light.defaultID
+        windowOpacity = (defaults.object(forKey: Key.windowOpacity.rawValue) as? Double)
+            .flatMap { (0...1).contains($0) ? $0 : nil }
+        windowBlur = defaults.object(forKey: Key.windowBlur.rawValue) as? Bool ?? true
         language = Self.storedLanguage
         calcNumberStyle =
             defaults.string(forKey: Key.calcNumberStyle.rawValue).flatMap(CalcNumberStyle.init)
             ?? .system
+        interfaceFont = defaults.string(forKey: Key.interfaceFont.rawValue) ?? InterfaceFont.system
+        interfaceCornerRadius =
+            defaults.string(forKey: Key.interfaceCornerRadius.rawValue).flatMap(InterfaceCornerRadius.init)
+            ?? .default
         interfaceSize =
             defaults.string(forKey: Key.interfaceSize.rawValue).flatMap(InterfaceSize.init)
             ?? .standard

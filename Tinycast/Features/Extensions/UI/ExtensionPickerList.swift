@@ -37,7 +37,8 @@ struct ExtensionPickerList: View {
                 .padding(searchPlaceholder == nil ? metrics.spacing.sm : 0)
         }
         .frame(width: width ?? form.controlWidth)
-        .glassEffect(.regular, in: shape)
+        .background(Theme.Colors.menuBackground, in: shape)
+        .themedGlass(in: shape)
         .clipShape(shape)
     }
 

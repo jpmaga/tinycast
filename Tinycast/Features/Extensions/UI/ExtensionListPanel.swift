@@ -40,10 +40,11 @@ final class ExtensionListPanelController {
 
     func present(_ content: AnyView, frame: NSRect, parent: NSWindow, palette: PaletteState) {
         let panel = ensurePanel(state: palette)
+        let root = AnyView(content.themeScope())
         if let hosting {
-            hosting.rootView = content
+            hosting.rootView = root
         } else {
-            let view = NSHostingView(rootView: content)
+            let view = NSHostingView(rootView: root)
             // The frame is stated from the control's place, so the host may never size the window.
             view.sizingOptions = []
             panel.contentView = view
@@ -149,6 +150,7 @@ private struct ExtensionListPanelModifier<List: View, Revision: Equatable>: View
         let height: CGFloat
         let anchor: CGRect
         let revision: Revision
+        let metrics: InterfaceMetrics
     }
 
     func body(content: Content) -> some View {
@@ -160,7 +162,7 @@ private struct ExtensionListPanelModifier<List: View, Revision: Equatable>: View
             } action: {
                 anchor = $0
             }
-            .onChange(of: Key(open: open, height: height, anchor: anchor, revision: revision)) {
+            .onChange(of: Key(open: open, height: height, anchor: anchor, revision: revision, metrics: metrics)) {
                 sync()
             }
             .onAppear { sync() }

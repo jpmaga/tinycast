@@ -18,10 +18,13 @@ enum AppPaths {
     static func settingsFile(
         bundleID: String = Bundle.main.bundleIdentifier ?? "com.abueammar.tinycast"
     ) -> URL {
-        FileManager.default.homeDirectoryForCurrentUser
-            .appending(path: ".config", directoryHint: .isDirectory)
-            .appending(path: configFolderName(bundleID: bundleID), directoryHint: .isDirectory)
-            .appending(path: "settings.json", directoryHint: .notDirectory)
+        configFolder(bundleID: bundleID).appending(path: "settings.json", directoryHint: .notDirectory)
+    }
+
+    static func themesFolder(
+        bundleID: String = Bundle.main.bundleIdentifier ?? "com.abueammar.tinycast"
+    ) -> URL {
+        configFolder(bundleID: bundleID).appending(path: "themes", directoryHint: .isDirectory)
     }
 
     /// Snippets or Notes: the folder the user chose, else its home in Application Support.
@@ -51,6 +54,12 @@ enum AppPaths {
     /// Absolute, or under `~/`, so the same path means the same folder on every Mac.
     static func isFolderPath(_ path: String) -> Bool {
         path.hasPrefix("/") || path.hasPrefix("~/")
+    }
+
+    private static func configFolder(bundleID: String) -> URL {
+        FileManager.default.homeDirectoryForCurrentUser
+            .appending(path: ".config", directoryHint: .isDirectory)
+            .appending(path: configFolderName(bundleID: bundleID), directoryHint: .isDirectory)
     }
 
     private static func configFolderName(bundleID: String) -> String {

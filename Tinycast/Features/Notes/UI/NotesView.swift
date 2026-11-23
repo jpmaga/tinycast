@@ -2,20 +2,23 @@ import SwiftUI
 
 struct NotesView: View {
     @Environment(NotesCoordinator.self) private var notes
-    /// Measured, since the capsule scales with Interface Size and grows a button while fitting is off.
+    /// The extra button while fitting is off must leave room for the centred title.
     @State private var actionsWidth: CGFloat = 0
+    private var metrics: InterfaceMetrics { notes.interfaceMetrics }
 
     var body: some View {
         VStack(spacing: 0) {
             titleBar
             content
         }
+        .environment(\.metrics, metrics)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Theme.Colors.panelScrim)
         .background(GlassEffectView())
-        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.panel, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: metrics.radius.panel, style: .continuous))
         // The band above is the title bar; AppKit must not inset the content a second time.
         .ignoresSafeArea()
+        .onChange(of: metrics.cornerMultiplier) { notes.refreshWindowShadow() }
         .onChange(of: notes.showsFormattingBar && notes.hasActiveNote) { _, shown in
             if !shown { notes.closeHeadingMenu() }
         }
@@ -35,7 +38,7 @@ struct NotesView: View {
 
     private var title: some View {
         Text(notes.activeTitle)
-            .font(Theme.Typography.noteTitle)
+            .font(metrics.typography.font(Theme.Typography.noteTitle, .headline))
             .lineLimit(1)
             .truncationMode(.tail)
             .padding(.horizontal, titleInset)
@@ -60,6 +63,7 @@ struct NotesView: View {
             NoteEditorView(
                 input: notes.editorInput,
                 rendersMarkdown: notes.rendersMarkdown,
+                metrics: metrics,
                 onSourceChange: notes.updateSource,
                 onCharacterCountChange: notes.updateCounts,
                 onFormattingChange: notes.updateFormatting,
@@ -95,14 +99,14 @@ struct NotesView: View {
             SymbolImage(name: "text.page", size: Theme.Size.noteEmptyGlyph)
                 .foregroundStyle(Theme.Colors.textTertiary)
             Text("No Notes")
-                .font(Theme.Typography.rowTitle)
+                .font(metrics.typography.rowTitle)
                 .foregroundStyle(Theme.Colors.textSecondary)
             Button("Create Note", action: notes.createNote)
                 .buttonStyle(.plain)
-                .font(Theme.Typography.bar)
+                .font(metrics.typography.bar)
                 .padding(.horizontal, Theme.Spacing.xl)
                 .frame(height: Theme.Size.barButtonHeight)
-                .frosted(in: Capsule())
+                .frosted(in: metrics.radius.capsule)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -122,7 +126,7 @@ struct NotesView: View {
             Text(notes.characterCountLabel)
                 .accessibilityLabel("\(notes.characterCount) characters in this note")
         }
-        .font(Theme.Typography.rowTrailing)
+        .font(metrics.typography.rowTrailing)
         .foregroundStyle(Theme.Colors.textTertiary)
         .lineLimit(1)
     }
@@ -166,6 +170,7 @@ private final class NoteTitlebarDragView: NSView {
 /// The title bar's trailing controls: the launcher's footer capsule, with glyphs instead of pills.
 private struct NoteTitlebarActions: View {
     @Environment(NotesCoordinator.self) private var notes
+    @Environment(\.metrics) private var metrics
 
     var body: some View {
         HStack(spacing: Theme.Spacing.xxs) {
@@ -185,7 +190,7 @@ private struct NoteTitlebarActions: View {
                 String(localized: "Open Notes Folder  ⌘O"), notes.openNotesFolder)
         }
         .padding(Theme.Spacing.xs)
-        .frosted(in: Capsule())
+        .frosted(in: metrics.radius.capsule)
         .padding(.trailing, Theme.Spacing.md)
     }
 

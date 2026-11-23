@@ -47,7 +47,7 @@ private struct DictionaryBlockView: View {
             HStack(alignment: .firstTextBaseline, spacing: metrics.spacing.md) {
                 HStack(alignment: .firstTextBaseline, spacing: metrics.spacing.xxs) {
                     Text(word)
-                        .font(metrics.typography.calcResult.weight(.bold))
+                        .font(metrics.typography.font(Theme.Typography.calcResult.weight(.bold), .title1, weight: .bold))
                     if let homograph {
                         Text(homograph)
                             .font(metrics.typography.keyCap)
@@ -70,7 +70,7 @@ private struct DictionaryBlockView: View {
         case .sense(let number, let runs):
             HStack(alignment: .firstTextBaseline, spacing: metrics.spacing.sm) {
                 Text(number ?? "")
-                    .font(metrics.typography.rowTitle.weight(.semibold))
+                    .font(metrics.typography.font(Theme.Typography.rowTitle.weight(.semibold), .body, weight: .semibold))
                     .foregroundStyle(Theme.Colors.textSecondary)
                     .frame(width: gutter, alignment: .trailing)
                 Text(runs.attributed())

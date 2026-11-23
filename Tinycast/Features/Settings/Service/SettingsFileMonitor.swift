@@ -1,4 +1,3 @@
-import Darwin
 import Foundation
 
 /// Reports edits to settings.json, an editor's save-by-rename included, once the writes settle.
@@ -50,16 +49,9 @@ final class SettingsFileMonitor {
     private func source(
         watching url: URL, events: DispatchSource.FileSystemEvent
     ) -> DispatchSourceFileSystemObject? {
-        let descriptor = Darwin.open(url.path, O_EVTONLY)
-        guard descriptor >= 0 else { return nil }
-        let source = DispatchSource.makeFileSystemObjectSource(
-            fileDescriptor: descriptor, eventMask: events, queue: .main)
-        source.setEventHandler { [weak self] in
+        FileSystemEventSource.watch(url, events: events) { [weak self] _ in
             Task { @MainActor in self?.sourceDidFire() }
         }
-        source.setCancelHandler { Darwin.close(descriptor) }
-        source.resume()
-        return source
     }
 
     private func sourceDidFire() {

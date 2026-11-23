@@ -77,6 +77,7 @@ struct GeneralSettingsView: View {
                 } label: {
                     SettingsRowTitle(.generalAppearance, "Appearance")
                 }
+                ThemeAppearanceRows()
                 Picker(selection: $settings.iconStyle) {
                     ForEach(IconStyle.allCases) { style in
                         Text(style.title).tag(style)
@@ -88,6 +89,14 @@ struct GeneralSettingsView: View {
                     SettingsRowTitle(.generalAppearance, "Show animations")
                 }
                 InterfaceSizeRow()
+                InterfaceFontRow()
+                Picker(selection: $settings.interfaceCornerRadius) {
+                    ForEach(InterfaceCornerRadius.allCases) { radius in
+                        Text(radius.title).tag(radius)
+                    }
+                } label: {
+                    SettingsRowTitle(.generalAppearance, "Corner roundness")
+                }
                 WindowModeRow()
                     .background {
                         if !settings.compactMode {
@@ -285,5 +294,79 @@ private struct InterfaceSizeRow: View {
         .accessibilityLabel(size.title)
         .accessibilityAddTraits(selected ? [.isSelected] : [])
         .help(size.title)
+    }
+}
+
+private struct InterfaceFontRow: View {
+    @Environment(AppSettings.self) private var settings
+    @State private var choosingFont = false
+    @State private var families: [String] = []
+    @State private var query = ""
+
+    private var selection: String {
+        InterfaceFont.isAvailable(settings.interfaceFont) ? settings.interfaceFont : InterfaceFont.system
+    }
+
+    var body: some View {
+        SettingsRow(title: "Font", anchor: .generalAppearance) {
+            Button {
+                families = NSFontManager.shared.availableFontFamilies.sorted {
+                    $0.localizedStandardCompare($1) == .orderedAscending
+                }
+                query = ""
+                choosingFont = true
+            } label: {
+                Text(title(for: selection))
+                    .lineLimit(1)
+            }
+            .accessibilityLabel("Font")
+            .accessibilityValue(title(for: selection))
+            .popover(isPresented: $choosingFont) {
+                fontList
+            }
+        }
+    }
+
+    private var fontList: some View {
+        let system = InterfaceFont.system
+        let selectedFamily = selection
+        let search = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let matchingFamilies = search.isEmpty ? families : families.filter { $0.localizedStandardContains(search) }
+        return VStack(spacing: Theme.Spacing.md) {
+            SettingsFilterField(prompt: "Search fonts", query: $query)
+            ScrollView {
+                LazyVStack(spacing: Theme.Spacing.xxs) {
+                    if search.isEmpty || title(for: system).localizedStandardContains(search) {
+                        option(system, isSelected: system == selectedFamily)
+                    }
+                    ForEach(matchingFamilies, id: \.self) { family in
+                        option(family, isSelected: family == selectedFamily)
+                    }
+                }
+            }
+        }
+        .padding(Theme.Spacing.xl)
+        .frame(width: 280, height: 300)
+    }
+
+    private func title(for family: String) -> String {
+        family == InterfaceFont.system ? String(localized: "System") : family
+    }
+
+    private func option(_ family: String, isSelected: Bool) -> some View {
+        Button {
+            settings.interfaceFont = family
+            choosingFont = false
+        } label: {
+            HStack {
+                Text(verbatim: title(for: family))
+                Spacer()
+                if isSelected { SymbolImage(name: "checkmark", size: Theme.Size.recorderKeyCap) }
+            }
+            .padding(Theme.Spacing.xs)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }

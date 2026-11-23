@@ -42,6 +42,7 @@ struct CompactBar: View {
     let onRun: (CommandID) -> Void
     /// The window caches its shadow from the shapes it first drew, before the buttons beaded out.
     let onSettled: () -> Void
+    @Environment(\.themePresentation) private var themePresentation
     @Environment(PaletteState.self) private var palette
     @Environment(\.metrics) private var metrics
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -71,14 +72,14 @@ struct CompactBar: View {
 
     /// Left unmasked where it can be: any mask also clips the rim glass draws past its shape.
     private func glass(geometry: CompactBarGeometry, revealed: Bool) -> some View {
-        let capsule = Capsule(style: .continuous)
+        let capsule = metrics.radius.capsule
         // One container, or the buttons could never bead off the capsule they come out of.
         return GlassEffectContainer(spacing: metrics.scaled(BarMotion.blend)) {
             ZStack(alignment: .topLeading) {
                 capsule.fill(.clear)
                     .frame(width: geometry.capsuleWidth(revealed: revealed))
                     .frame(maxHeight: .infinity)
-                    .glassEffect(.regular, in: capsule)
+                    .themedGlass(in: capsule, tinted: true)
                     .animation(
                         reduceMotion ? nil : BarMotion.capsule.delay(BarMotion.revealDelay),
                         value: revealed)
@@ -98,7 +99,7 @@ struct CompactBar: View {
         } label: {
             Color.clear
                 .frame(width: geometry.diameter, height: geometry.diameter)
-                .contentShape(.circle)
+                .contentShape(metrics.radius.circle)
         }
         .buttonStyle(.plain)
         .focusable(false)
@@ -106,9 +107,14 @@ struct CompactBar: View {
         .accessibilityLabel(command.name)
         .accessibilityAddTraits(selection == command ? [.isSelected] : [])
         .accessibilityHidden(!revealed)
-        .glassEffect(
+        .background {
+            if !themePresentation.windowBlur, selection == command {
+                Circle().fill(Theme.Colors.compactShortcutSelectionTint)
+            }
+        }
+        .themedGlass(
             .regular.tint(selection == command ? Theme.Colors.compactShortcutSelectionTint : nil)
-                .interactive(), in: .circle
+                .interactive(), in: metrics.radius.circle
         )
         .scaleEffect(revealed ? 1 : BarMotion.parkedScale)
         .position(revealed ? geometry.center(of: index) : geometry.parked)
@@ -129,14 +135,14 @@ struct CompactBar: View {
         geometry: CompactBarGeometry, revealed: Bool, sparing spared: CommandID?
     ) -> some View {
         ZStack(alignment: .topLeading) {
-            Capsule().fill(.white)
+            metrics.radius.capsule.fill(.white)
                 .frame(width: geometry.capsuleWidth(revealed: revealed))
                 .frame(maxHeight: .infinity)
                 .animation(
                     reduceMotion ? nil : BarMotion.capsule.delay(BarMotion.revealDelay),
                     value: revealed)
             ForEach(Array(commands.enumerated()), id: \.element) { index, command in
-                Circle().fill(.white)
+                metrics.radius.circle.fill(.white)
                     .frame(width: geometry.diameter, height: geometry.diameter)
                     .opacity(revealed && spared != command ? 1 : 0)
                     .scaleEffect(revealed ? 1 : BarMotion.parkedScale)

@@ -45,6 +45,10 @@ final class NotesWindowController: NSObject, NSWindowDelegate {
         }
     }
 
+    func refreshShadow() {
+        panel?.invalidateShadow()
+    }
+
     func editorReady(_ textView: NoteTextView) {
         editor = textView
         observeLayout(of: textView)
@@ -180,7 +184,7 @@ final class NotesWindowController: NSObject, NSWindowDelegate {
 
     private func ensurePanel() -> NotesPanel {
         if let panel { return panel }
-        let root = NotesView().environment(coordinator).motionScope()
+        let root = NotesView().environment(coordinator).motionScope().themeScope()
         let hosting = NSHostingView(rootView: root)
         hosting.sizingOptions = []
         let panel = NotesPanel(

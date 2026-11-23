@@ -887,7 +887,7 @@ struct ExtensionTests {
         check("no icon falls back to a glyph", icon("null").source == .symbol("bolt"))
         let destructive = icon("null", isDestructive: true)
         check("a destructive fallback is a trash glyph", destructive.source == .symbol("trash"))
-        check("and takes red", destructive.tint == .red)
+        check("and uses the theme's destructive tint", destructive.tint == Theme.Colors.destructive)
         check(
             "a destructive action's own tint wins",
             icon(#"{"source":"circle-16","tintColor":"raycast-yellow"}"#, isDestructive: true).tint

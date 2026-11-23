@@ -88,6 +88,8 @@ feature's doc, under its own `## Invariants`.
   the forced-dark build shipped, restated rather than re-derived. Retune a light branch freely; change
   a dark one only when the task is to change Dark. `AppAppearance` drives `NSApp.appearance`, and
   `.system` maps to `nil` so AppKit follows macOS on its own.
+  Tinycast Dark and Tinycast Light keep their shipped literals, and other
+  [colour themes](docs/features/themes.md) derive colours from a palette through the same tokens.
 - **Tinycast presents its own dialogs, never `NSAlert` or a system popover.** A question
   goes through `DialogController`, a report through a HUD via `HUDPresenter`. The Settings window is
   the one exception: a stock titled window, its panes ask with SwiftUI's `confirmationDialog` or

@@ -34,6 +34,19 @@ in `Features/Settings/` (`Model/`, `Service/`, `SettingsFileSchema.swift`), the 
 
 ## Layout
 
+`appearance.font` is `"system"` or an installed macOS font family name. An unavailable name in the
+file is reported and the current preference is kept. If a saved family becomes unavailable, Tinycast
+renders it in System.
+
+`appearance.cornerRadius` accepts `"square"`, `"subtle"`, `"default"` and `"round"`. Omitting either
+appearance key keeps the current preference.
+
+`appearance.darkTheme` and `appearance.lightTheme` hold [theme IDs](themes.md), with
+`tinycast-dark` and `tinycast-light` as defaults. An unavailable ID renders the default for its
+variant. `appearance.theme` still sets Light, Dark or System. `appearance.windowOpacity` accepts
+0 through 1, or `null` for the palette's own alpha. Omitting a key in a partial edit leaves its
+current value in place. `appearance.windowBlur` is a boolean and defaults to `true`.
+
 `appearance.compactBarCommands` is an ordered array of zero to four unique command identifiers.
 For example, `["command:clipboard-history", "command:search-emoji", "command:ai-chat"]` shows
 Clipboard History, Emoji & Symbols and Quick AI in that order. Only the eight commands offered by
@@ -109,6 +122,12 @@ because the app rewrites the file.
     "escapeKeyBehavior": "navigateBackOrClose",
     "autoSwitchInputSource": null,
     "supportReminders": true
+  },
+  "appearance": {
+    "darkTheme": "nord",
+    "lightTheme": "tinycast-light",
+    "windowOpacity": null,
+    "windowBlur": true
   },
   "clipboard": {
     "enabled": true,

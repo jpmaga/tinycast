@@ -3,10 +3,11 @@ import SwiftUI
 struct NoteSwitcherView: View {
     let onContentHeight: (CGFloat) -> Void
     @Environment(NotesCoordinator.self) private var notes
+    private var metrics: InterfaceMetrics { notes.interfaceMetrics }
     @FocusState private var searchFocused: Bool
 
     private var surface: RoundedRectangle {
-        RoundedRectangle(cornerRadius: Theme.Radius.menuPanel, style: .continuous)
+        RoundedRectangle(cornerRadius: metrics.radius.menuPanel, style: .continuous)
     }
 
     var body: some View {
@@ -15,7 +16,9 @@ struct NoteSwitcherView: View {
             results
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .glassEffect(.regular, in: surface)
+        .environment(\.metrics, metrics)
+        .background(Theme.Colors.menuBackground, in: surface)
+        .themedGlass(in: surface)
         .clipShape(surface)
         .onAppear(perform: focusSearch)
         .onChange(of: notes.switcherFocusRevision) { _, _ in focusSearch() }
@@ -45,6 +48,7 @@ struct NoteSwitcherView: View {
                 .foregroundStyle(Theme.Colors.textSecondary)
             TextField("Search notes…", text: notes.searchQueryBinding)
                 .textFieldStyle(.plain)
+                .font(metrics.typography.rowTitle)
                 .focused($searchFocused)
                 .onExitCommand { notes.closeSwitcher() }
                 .accessibilityLabel("Search Notes")
@@ -73,6 +77,7 @@ struct NoteSwitcherView: View {
                 )
                 .foregroundStyle(Theme.Colors.textSecondary)
                 Text(notes.isSearching ? "Searching notes…" : "No notes found")
+                    .font(metrics.typography.rowTitle)
                     .foregroundStyle(Theme.Colors.textSecondary)
             }
             .frame(maxWidth: .infinity)
@@ -132,6 +137,7 @@ extension View {
 }
 
 private struct NoteSwitcherRow: View {
+    @Environment(\.metrics) private var metrics
     let summary: NoteSummary
     let selected: Bool
     let editing: Bool
@@ -159,12 +165,13 @@ private struct NoteSwitcherRow: View {
             if editing {
                 TextField("Note title", text: $titleDraft)
                     .textFieldStyle(.plain)
+                    .font(metrics.typography.rowTitle)
                     .focused($titleFocused)
                     .onSubmit(onCommitRename)
                     .onExitCommand(perform: onCancelRename)
             } else {
                 Text(summary.displayTitle)
-                    .font(Theme.Typography.rowTitle)
+                    .font(metrics.typography.rowTitle)
                     .lineLimit(1)
             }
             Spacer(minLength: Theme.Spacing.md)
@@ -183,7 +190,7 @@ private struct NoteSwitcherRow: View {
         .padding(.horizontal, Theme.Spacing.md)
         .padding(.vertical, Theme.Spacing.sm)
         .background(
-            RoundedRectangle(cornerRadius: Theme.Radius.row, style: .continuous)
+            RoundedRectangle(cornerRadius: metrics.radius.menuRow(inset: Theme.Spacing.md), style: .continuous)
                 .fill(fill)
         )
         .contentShape(Rectangle())

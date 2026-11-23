@@ -77,7 +77,7 @@ struct UpdatePill: View {
             }
             if let action = content.action {
                 BarButton(action: action.perform) { Text(action.title) }
-                    .background(content.tint.opacity(Self.actionOpacity), in: Capsule())
+                    .background(content.tint.opacity(Self.actionOpacity), in: metrics.radius.capsule)
             }
             closeButton(title: content.closeTitle)
         }
@@ -87,8 +87,8 @@ struct UpdatePill: View {
         .padding(.leading, metrics.spacing.lg)
         .padding(.trailing, metrics.spacing.xs)
         .frame(height: metrics.size.menuButton)
-        .glassEffect(
-            .regular.tint(content.tint.opacity(Self.tintOpacity)).interactive(), in: Capsule()
+        .themedGlass(
+            .regular.tint(content.tint.opacity(Self.tintOpacity)).interactive(), in: metrics.radius.capsule
         )
         .fixedSize()
         .padding(.leading, metrics.spacing.md)
@@ -101,7 +101,7 @@ struct UpdatePill: View {
                 .frame(
                     width: metrics.scaled(Self.glyphSize), height: metrics.scaled(Self.glyphSize))
         }
-        .background(Theme.Colors.controlSurface, in: Circle())
+        .background(Theme.Colors.controlSurface, in: metrics.radius.circle)
         .accessibilityLabel(title)
     }
 

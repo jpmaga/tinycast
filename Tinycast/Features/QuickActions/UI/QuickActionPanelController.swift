@@ -16,7 +16,7 @@ final class QuickActionPanelController: NSObject, NSWindowDelegate {
 
     func present(
         _ state: QuickActionPanelState,
-        metrics: InterfaceMetrics,
+        settings: AppSettings,
         languages: [Locale.Language],
         onRetranslate: @escaping (Locale.Language) -> Void,
         onReplace: @escaping (String) -> Void
@@ -26,6 +26,7 @@ final class QuickActionPanelController: NSObject, NSWindowDelegate {
         self.onReplace = onReplace
         self.onRetranslate = onRetranslate
 
+        let metrics = settings.interfaceMetrics
         let hosting = NSHostingView(
             rootView: QuickActionResultView(
                 state: state,
@@ -36,7 +37,7 @@ final class QuickActionPanelController: NSObject, NSWindowDelegate {
                 onRetranslate: { [weak self] in self?.onRetranslate?($0) },
                 onOpenLanguageSettings: { [weak self] in self?.openLanguageSettings() },
                 onHeight: { [weak self] in self?.resize(toHeight: $0) }
-            ).environment(\.metrics, metrics).motionScope())
+            ).interfaceMetrics(settings, fixedScale: metrics.scale).motionScope().themeScope())
         // The controller owns the frame; without this the top edge drifts as the reply grows.
         hosting.sizingOptions = []
         // Its tallest, so the first frame is never short; the view reports the real height at once.

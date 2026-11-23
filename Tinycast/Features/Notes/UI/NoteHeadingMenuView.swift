@@ -3,6 +3,7 @@ import SwiftUI
 /// `PopoverMenuRow`'s look, copied: `PopoverMenu` reads palette state that Notes does not have.
 struct NoteHeadingMenuView: View {
     @Environment(NotesCoordinator.self) private var notes
+    private var metrics: InterfaceMetrics { notes.interfaceMetrics }
 
     private struct Row {
         let level: Int
@@ -18,7 +19,7 @@ struct NoteHeadingMenuView: View {
     ]
 
     private var surface: RoundedRectangle {
-        RoundedRectangle(cornerRadius: Theme.Radius.menuPanel, style: .continuous)
+        RoundedRectangle(cornerRadius: metrics.radius.menuPanel, style: .continuous)
     }
 
     var body: some View {
@@ -34,7 +35,9 @@ struct NoteHeadingMenuView: View {
         }
         .padding(Theme.Spacing.sm)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .glassEffect(.regular, in: surface)
+        .environment(\.metrics, metrics)
+        .background(Theme.Colors.menuBackground, in: surface)
+        .themedGlass(in: surface)
         .clipShape(surface)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Heading")
@@ -42,6 +45,7 @@ struct NoteHeadingMenuView: View {
 }
 
 private struct NoteHeadingMenuRow: View {
+    @Environment(\.metrics) private var metrics
     let title: String
     let shortcut: String
     let isCurrent: Bool
@@ -60,7 +64,7 @@ private struct NoteHeadingMenuRow: View {
                     .opacity(isCurrent ? 1 : 0)
                     .frame(width: Theme.Size.menuIcon, height: Theme.Size.menuIcon)
                 Text(title)
-                    .font(Theme.Typography.menuRow)
+                    .font(metrics.typography.menuRow)
                     .lineLimit(1)
                 Spacer(minLength: Theme.Spacing.sm)
                 HStack(spacing: Theme.Spacing.xxs) {
@@ -76,7 +80,7 @@ private struct NoteHeadingMenuRow: View {
             )
             .contentShape(Rectangle())
             .background(
-                RoundedRectangle(cornerRadius: Theme.Radius.menuRow, style: .continuous)
+                RoundedRectangle(cornerRadius: metrics.radius.menuRow, style: .continuous)
                     .fill(hovered ? Theme.Colors.menuHover : Color.clear))
         }
         .buttonStyle(.plain)

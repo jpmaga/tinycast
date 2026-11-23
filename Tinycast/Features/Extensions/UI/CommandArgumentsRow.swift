@@ -60,7 +60,9 @@ struct CommandArgumentsRow: View {
 }
 
 private struct ArgumentField: View {
-    private var form: ExtensionFormMetrics { ExtensionFormMetrics(scale: metrics.scale) }
+    private var form: ExtensionFormMetrics {
+        ExtensionFormMetrics(scale: metrics.scale, cornerMultiplier: metrics.cornerMultiplier)
+    }
     @Environment(\.metrics) private var metrics
     let argument: ExtensionCommandArgument
     @Binding var text: String
@@ -74,7 +76,7 @@ private struct ArgumentField: View {
         )
         .textFieldStyle(.plain)
         .font(metrics.typography.rowTrailing)
-        .tint(.white)
+        .tint(Theme.Colors.caretInk)
         .onSubmit(onSubmit)
         // Sized to the placeholder so a three-argument command still fits.
         .frame(width: CommandArgumentsRow.fieldWidth(for: argument, metrics: metrics))
@@ -96,7 +98,7 @@ private struct ArgumentField: View {
 
     private var stroke: Color {
         if isFocused { return ExtensionColors.fieldStroke }
-        if argument.required && text.isEmpty { return Color.orange.opacity(0.45) }
+        if argument.required && text.isEmpty { return Theme.Colors.warning.opacity(0.45) }
         return ExtensionColors.fieldStroke
     }
 }

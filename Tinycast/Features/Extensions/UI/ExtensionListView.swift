@@ -277,7 +277,7 @@ struct ExtensionAccessoriesView: View {
                 .padding(.horizontal, metrics.spacing.xs)
                 .padding(.vertical, 1)
                 .background(
-                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    RoundedRectangle(cornerRadius: metrics.radius.scaled(4), style: .continuous)
                         .fill(color.opacity(0.16))
                 )
                 .lineLimit(1)
@@ -353,20 +353,26 @@ private struct ExtensionGridCell: View {
             .clipShape(RoundedRectangle(cornerRadius: contentRadius, style: .continuous))
             .frame(width: width, height: height)
             .background(
-                RoundedRectangle(cornerRadius: ExtensionGridLayout.tileRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: tileRadius, style: .continuous)
                     .fill(background)
             )
             // A tile filled edge to edge hides that fill, so the ring is what marks the selection.
             .overlay {
-                RoundedRectangle(cornerRadius: ExtensionGridLayout.tileRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: tileRadius, style: .continuous)
                     .strokeBorder(Theme.Colors.border, lineWidth: 2)
                     .opacity(selected ? 1 : 0)
             }
     }
 
     /// Filling content shares the tile's corner; inset artwork is small enough to need a tighter one.
-    private var contentRadius: Double {
-        layout.inset == .zero ? ExtensionGridLayout.tileRadius : metrics.radius.thumbnail
+    private var contentRadius: CGFloat {
+        guard layout.inset != .zero else { return tileRadius }
+        if metrics.cornerMultiplier == 1 { return metrics.radius.thumbnail }
+        return max(0, tileRadius - width * layout.inset.fraction)
+    }
+
+    private var tileRadius: CGFloat {
+        metrics.radius.scaled(ExtensionGridLayout.tileRadius)
     }
 
     /// `content` is an `ImageLike` or `{value, tooltip}` wrapping one — both `resolve`'s job.

@@ -90,12 +90,14 @@ final class NoteBlockLayoutFragment: NSTextLayoutFragment {
         context.saveGState()
         context.addPath(
             Self.bandPath(
-                rect, topRadius: roundsTop ? Theme.Radius.menu : 0,
-                bottomRadius: roundsBottom ? Theme.Radius.menu : 0))
+                rect, topRadius: roundsTop ? decoration.radius.menu : 0,
+                bottomRadius: roundsBottom ? decoration.radius.menu : 0))
         context.setFillColor(decoration.fill.cgColor)
         context.fillPath()
         if roundsTop, let language {
-            let font = NSFont.systemFont(ofSize: NSFont.preferredFont(forTextStyle: .caption1).pointSize)
+            let size = NSFont.preferredFont(forTextStyle: .caption1).pointSize
+            let font = decoration.captionFontName.flatMap { NSFont(name: $0, size: size) }
+                ?? NSFont.systemFont(ofSize: size)
             let line = Self.line(language, font: font, color: decoration.ink)
             let width = CTLineGetTypographicBounds(line, nil, nil, nil)
             let baseline = top + (layoutFragmentFrame.height + font.capHeight) / 2
@@ -107,13 +109,14 @@ final class NoteBlockLayoutFragment: NSTextLayoutFragment {
     private func drawQuoteBars(depth: Int, left: CGFloat, top: CGFloat, in context: CGContext) {
         context.setFillColor(decoration.fill.cgColor)
         let step = Theme.Size.markdownQuoteBar + Theme.Spacing.lg
+        let radius = decoration.radius.scaled(1)
         let minY = top.rounded()
         let height = (top + layoutFragmentFrame.height).rounded() - minY
         for level in 0..<depth {
             let bar = CGRect(
                 x: (left + CGFloat(level) * step).rounded(), y: minY, width: Theme.Size.markdownQuoteBar,
                 height: height)
-            context.addPath(CGPath(roundedRect: bar, cornerWidth: 1, cornerHeight: 1, transform: nil))
+            context.addPath(CGPath(roundedRect: bar, cornerWidth: radius, cornerHeight: radius, transform: nil))
         }
         context.fillPath()
     }
@@ -128,7 +131,8 @@ final class NoteBlockLayoutFragment: NSTextLayoutFragment {
     }
 
     private func drawLabel(_ label: String, level: Int, left: CGFloat, top: CGFloat, in context: CGContext) {
-        let font = NSFont.systemFont(ofSize: decoration.bodyPointSize)
+        let font = decoration.bodyFontName.flatMap { NSFont(name: $0, size: decoration.bodyPointSize) }
+            ?? NSFont.systemFont(ofSize: decoration.bodyPointSize)
         let line = Self.line(label, font: font, color: decoration.ink)
         let width = CTLineGetTypographicBounds(line, nil, nil, nil)
         let slotEnd = left + CGFloat(level + 1) * slot - Self.orderedLabelPadding
@@ -140,13 +144,13 @@ final class NoteBlockLayoutFragment: NSTextLayoutFragment {
             level: level, firstLineHeight: firstLine.height, bodyPointSize: decoration.bodyPointSize
         ).offsetBy(dx: left, dy: top + firstLine.minY)
         guard checked else {
-            context.addPath(Self.roundedBox(box.insetBy(dx: Self.boxStroke / 2, dy: Self.boxStroke / 2)))
+            context.addPath(roundedBox(box.insetBy(dx: Self.boxStroke / 2, dy: Self.boxStroke / 2)))
             context.setStrokeColor(decoration.fill.cgColor)
             context.setLineWidth(Self.boxStroke)
             context.strokePath()
             return
         }
-        context.addPath(Self.roundedBox(box))
+        context.addPath(roundedBox(box))
         context.setFillColor(decoration.fill.cgColor)
         context.fillPath()
         context.move(to: CGPoint(x: box.minX + box.width * 0.25, y: box.minY + box.height * 0.55))
@@ -178,8 +182,9 @@ final class NoteBlockLayoutFragment: NSTextLayoutFragment {
         return path
     }
 
-    private static func roundedBox(_ rect: CGRect) -> CGPath {
-        CGPath(roundedRect: rect, cornerWidth: boxRadius, cornerHeight: boxRadius, transform: nil)
+    private func roundedBox(_ rect: CGRect) -> CGPath {
+        let radius = decoration.radius.scaled(Self.boxRadius)
+        return CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil)
     }
 
     private static func line(_ string: String, font: NSFont, color: NSColor) -> CTLine {

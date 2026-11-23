@@ -121,7 +121,7 @@ final class PalettePanel: NSPanel, AnimatedPanel {
             keyCode: UInt16(arrow.code))
     }
 
-    private static let caretColor = NSColor(Theme.Colors.textPrimary)
+    private static let caretColor = ThemeRendering.appKitColor(Theme.Colors.textPrimary)
 
     /// Caret hiding on SwiftUI's own field editor. docs/features/palette.md#menu-open-input-freeze
     private func setSearchCaretHidden(_ hidden: Bool) {
@@ -277,7 +277,7 @@ final class PalettePanel: NSPanel, AnimatedPanel {
         followMotion()
         isReleasedWhenClosed = false
 
-        let hosting = NSHostingView(rootView: rootView)
+        let hosting = NSHostingView(rootView: rootView.themeScope())
         hosting.wantsLayer = true
         // The controller owns the frame; without this the top edge drifts on the swap.
         hosting.sizingOptions = []

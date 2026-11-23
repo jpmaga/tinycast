@@ -121,8 +121,8 @@ private struct RoomPickerRowView: View {
                 .background(Circle().fill(place == nil ? .clear : Theme.Colors.roomCardStroke))
             if let place {
                 Text(place, format: .number)
-                    .font(metrics.typography.rowTrailing.weight(.semibold))
-                    .foregroundStyle(.white)
+                    .font(metrics.typography.font(Theme.Typography.rowTrailing.weight(.semibold), .callout, weight: .semibold))
+                    .foregroundStyle(Theme.Colors.accentInk)
             }
         }
         .frame(width: metrics.size.resultRowIcon, height: metrics.size.resultRowIcon)

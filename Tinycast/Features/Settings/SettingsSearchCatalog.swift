@@ -141,6 +141,27 @@ enum SettingsSearchCatalog {
             .generalAppearance, "Appearance",
             keywords: ["dark", "light", "mode", "theme"]),
         .init(
+            .generalAppearance, "Dark theme",
+            keywords: ["colour", "color", "palette", "dark mode"]),
+        .init(
+            .generalAppearance, "Light theme",
+            keywords: ["colour", "color", "palette", "light mode"]),
+        .init(
+            .generalAppearance, "Themes folder",
+            keywords: ["custom themes", "open", "finder", "theme file issues"]),
+        .init(
+            .generalAppearance, "Create theme file",
+            keywords: ["custom themes", "starter", "json"]),
+        .init(
+            .generalAppearance, "Window opacity",
+            keywords: ["transparency", "translucency", "background"]),
+        .init(
+            .generalAppearance, "Use theme opacity",
+            keywords: ["default", "transparency", "background"]),
+        .init(
+            .generalAppearance, "Blur behind windows",
+            keywords: ["glass", "blur", "transparency", "background"]),
+        .init(
             .generalAppearance, "Icon style",
             keywords: ["icons", "colorful", "clear", "tinted", "dark", "widget", "theme"]),
         .init(
@@ -149,6 +170,12 @@ enum SettingsSearchCatalog {
         .init(
             .generalAppearance, "Interface size",
             keywords: ["text size", "font size", "scale", "zoom", "bigger", "larger", "legible"]),
+        .init(
+            .generalAppearance, "Font",
+            keywords: ["family", "typeface", "typography", "text"]),
+        .init(
+            .generalAppearance, "Corner roundness",
+            keywords: ["corner radius", "square", "subtle", "round", "shape"]),
         .init(
             .generalAppearance, "Window mode",
             keywords: ["compact", "expanded", "slim", "search bar", "small"]),

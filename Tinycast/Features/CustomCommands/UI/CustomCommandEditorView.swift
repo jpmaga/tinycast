@@ -74,7 +74,7 @@ struct CustomCommandEditorView: View {
                                         """),
                                 value: $editor.showsOutput, focus: .output)
                             if let errorMessage = editor.errorMessage {
-                                detail(errorMessage).foregroundStyle(.orange)
+                                detail(errorMessage).foregroundStyle(Theme.Colors.warning)
                             }
                         }
                     }

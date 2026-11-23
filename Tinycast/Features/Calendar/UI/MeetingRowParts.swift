@@ -30,7 +30,7 @@ struct MeetingTiming: View {
                 Text(pill?.text ?? "")
                     .foregroundStyle(pill?.isImminent == true ? .primary : .secondary)
             }
-            .font(metrics.typography.rowTrailing.weight(.medium))
+            .font(metrics.typography.font(Theme.Typography.rowTrailing.weight(.medium), .callout, weight: .medium))
             .padding(.horizontal, metrics.spacing.sm)
             .padding(.vertical, metrics.spacing.xxs)
             .background(

@@ -364,7 +364,7 @@ struct RootPaletteView: View {
                 .background(isCollapsed ? .clear : Theme.Colors.panelScrim)
                 // Square, as rounded glass feathers its edge; the clip alone cuts a crisp corner.
                 .background {
-                    Color.clear.glassEffect(isCollapsed ? .identity : .regular, in: Rectangle())
+                    Color.clear.themedGlass(isCollapsed ? .identity : .regular, in: Rectangle())
                 }
                 .overlay {
                     Theme.Colors.dialogDimming
@@ -418,6 +418,7 @@ struct RootPaletteView: View {
     @ViewBuilder
     private func stateObservers(_ content: some View) -> some View {
         emojiObservers(content)
+            .onChange(of: metrics.cornerMultiplier) { hostWindow?.invalidateShadow() }
             // Every show bumps focusToken so the search field refocuses.
             .onChange(of: vm.focusToken) {
                 resetCompactSelection()
@@ -1080,7 +1081,7 @@ struct RootPaletteView: View {
             }
         }
         .padding(metrics.spacing.xs)
-        .frosted(in: Capsule())
+        .frosted(in: metrics.radius.capsule)
     }
 
     /// The one path opening the Actions menu, sampling the state its rows depend on.
@@ -1654,12 +1655,12 @@ private struct MenuCircleButton: View {
             }
             .foregroundStyle(Theme.Colors.textSecondary)
             .frame(width: metrics.size.menuButton, height: metrics.size.menuButton)
-            .background(Circle().fill(hovered ? Theme.Colors.rowHover : Color.clear))
-            .contentShape(.circle)
+            .background(metrics.radius.circle.fill(hovered ? Theme.Colors.rowHover : Color.clear))
+            .contentShape(metrics.radius.circle)
         }
         .buttonStyle(.plain)
         .onHover { hovered = $0 }
-        .frosted(in: Circle())
+        .frosted(in: metrics.radius.circle)
     }
 }
 

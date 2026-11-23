@@ -122,7 +122,9 @@ private struct SnippetOptionRow: View {
                 Spacer(minLength: metrics.spacing.sm)
                 if isChosen {
                     Image(systemName: "checkmark")
-                        .font(metrics.typography.rowTrailing.weight(.semibold))
+                        .font(
+                            metrics.typography.font(
+                                Theme.Typography.rowTrailing.weight(.semibold), .callout, weight: .semibold))
                         .foregroundStyle(Theme.Colors.textSecondary)
                 }
             }

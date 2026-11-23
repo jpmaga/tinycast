@@ -61,6 +61,9 @@ What syncs, and how the pane presents it, follows Raycast's Cloud Sync. The feat
 | Always  | Favorites & Fallback Order                                                   | both lists                                                            |
 | Always  | Other Settings                                                               | every other `settings.json` key `SyncSettingScope` doesn't keep local |
 
+Font and Corner roundness sync with the Appearance category. Each Mac uses its installed fonts when
+applying the family preference.
+
 Never: clipboard history, custom commands, search ranking and frecency, credentials, and
 Mac-specific settings (feature switches, folders, language, search scopes, palette position).
 

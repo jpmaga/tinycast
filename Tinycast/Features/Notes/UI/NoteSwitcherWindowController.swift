@@ -44,6 +44,7 @@ final class NoteSwitcherWindowController: NSObject, NSWindowDelegate {
         let root = NoteSwitcherView { [weak self] in self?.resize(toContentHeight: $0) }
             .environment(coordinator)
             .motionScope()
+            .themeScope()
         let hosting = NSHostingView(rootView: root)
         hosting.sizingOptions = []
         let panel = NotesPanel(

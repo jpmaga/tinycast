@@ -29,6 +29,7 @@ Independently of the folder tree, every mature subsystem has converged on the sa
 │ RaycastDecoder · Scrypt · AppSettingsKey · SettingsBackupCoverage          │
 │ SettingsFile{JSON,Key,Value,Format,Binding,Issue,Identity} ·               │
 │ HotKeySpelling · WindowManagementFileFormat ·                              │
+│ ThemePalette · Themes/Model/* ·                                            │
 │ MeetingLink · MeetingEvent · UpcomingWindow · MeetingDay · MenuBarSummary  │
 │ AutoJoinPolicy · EventDraft · SupportReminderSchedule ·                    │
 │ MenuSearch{Item,Shortcut,Query,TreeNode,SnapshotPolicy,Target} ·           │
@@ -44,11 +45,11 @@ Independently of the folder tree, every mature subsystem has converged on the sa
 │ SystemActionRunner · QuicklinkLauncher · TextInjector ·             │
 │ SnippetKeywordListener · NotesRepository · CurrencyRateStore · Paster ·    │
 │ HotKeyCenter · HyperKeyTap · KeyboardRemapper · ModifierTapMonitor ·       │
-│ SecureInputMonitor · RunningAppsMonitor ·                                  │
+│ SecureInputMonitor · RunningAppsMonitor · ThemeStore · ThemeFileMonitor ·  │
 │ CalendarStore · MeetingLauncher · MeetingClock · CameraSession ·           │
 │ SupportReminderStore · AXMenuAccess · WindowZOrder · WindowSwitchSweep ·   │
 │ AppleShortcutRunner · SettingsFileRepository · SettingsFileMonitor ·       │
-│ WindowManagementSettingsFile                                               │
+│ WindowManagementSettingsFile · ThemeFileRepository                         │
 └──────────────────────────────────┬─────────────────────────────────────────┘
                                    │ published through
 ┌─ OBSERVABLE STATE ───────────────▼─────────────────────────────────────────┐
@@ -91,7 +92,7 @@ the shared primitives and system shims every feature draws on. Neither may depen
 `AppCore.shared` (`App/AppCore.swift`) is a `@MainActor` singleton owning every long-lived thing in the
 app: the stores (`AppIndex`, `ClipboardStore`, `SnippetsStore`, `QuicklinkStore`, `CustomCommandStore`,
 `FavoritesStore`, `VisibilityStore`, `AliasStore`, `LauncherRankingStore`, `CalculatorHistoryStore`,
-`CurrencyRateStore`, `FrequentEmojiStore`, `CalendarStore`), the managers, monitors and clocks
+`CurrencyRateStore`, `FrequentEmojiStore`, `CalendarStore`, `ThemeStore`), the managers, monitors and clocks
 (`ClipboardManager`, the opt-in `ClipboardTextIndexer`, the opt-in `SettingsFileRepository`, the
 `SettingsBindingSet` it shares with iCloud Sync,
 `HotKeyManager`, `HyperKeyManager`, `RunningAppsMonitor`,
@@ -117,10 +118,17 @@ fine too; deciding something with one is what the rule forbids. `showNotice`, `c
 New long-lived state belongs on `AppCore`, wired in `load()` when Settings' own process needs it too,
 otherwise in `start()`. Do not create a competing singleton: this is a singleton, not a container.
 
-`start(launchedByUser:)` is the main app's boot: `load()` (preferences applied, stores read, hotkey bindings
-loaded, nothing registered, tapped or polled), then everything that runs an engine. `startSettings()` is
-the Settings process's: `load()` plus its line to the main app. Neither role checks the other's at run
-time; the split is the boundary.
+`start(launchedByUser:)` is the main app's boot: `load()` (preferences applied, stores read and shared
+services started), then the main app's engines. `startSettings()` is the Settings process's:
+`load()` plus its line to the main app. Neither role checks the other's at run time; the split is the
+boundary.
+
+`AppCore.load()` supplies the colour theme catalogue to both roles. In the main app,
+`ThemeStore` on `AppCore` publishes the resolved palettes and background preferences to
+`ThemeRendering.shared`. Like `Motion.isEnabled` and `IconCache.style`, it is process-wide because
+the dynamic AppKit colour provider needs a global snapshot.
+Themed hosts consume that snapshot through their SwiftUI environment.
+See [colour themes](features/themes.md).
 
 Clipboard text recognition runs outside the process. `AppCore` owns the indexer;
 the stateless `ClipboardTextWorker` runs one bundled `ClipboardTextHelper` per item, from
@@ -271,6 +279,10 @@ and nothing is copied.
   lifecycle. Losing the connection finishes all pending requests. What only the main app
   knows comes back as `MainAppStatus`, rebuilt under observation and sent when it changes. Panes reach
   both through `MainAppLink` in the environment.
+- **User themes.** Each process owns a `ThemeFileMonitor` on `AppCore` and loads the same
+  config folder through `ThemeFileRepository`. Files are already shared between the roles, so
+  Settings gets the catalogue and diagnostics directly from disk. Settings writes a starter only
+  on request. The main app publishes the rendering snapshot and presents HUDs for new issues.
 - **Shortcut recording** pauses the main app's engines through `HotKeyManager.isRecordingInSettings`; the
   child's own `HotKeyManager` is loaded but never activated, so it registers nothing.
 - **Extensions** never run in Settings. `ExtensionLibrary` reads the catalog from disk and mirrors the
@@ -324,7 +336,8 @@ everything that feature owns.
 Tinycast/
   App/              @main, AppDelegate, AppCore (the composition root), ProcessRole, SettingsApp,
                     SharedStateMirror
-  DesignSystem/     Theme (the token source), KeyCapChip, Tooltip, SymbolImage,
+  DesignSystem/     Theme (the token source), ThemePalette, ThemePresentation,
+                    KeyCapChip, Tooltip, SymbolImage,
                     GlassEffectView, PopoverMenu, SettingsComponents, Scrolling/, Interaction/
   Platform/         system shims: Permissions, LaunchAtLogin, InputSourceSwitcher, ScreenTarget,
                     AppDisplayName,
@@ -341,7 +354,7 @@ Tinycast/
     PaletteRowIndex.swift   the flat selection index, palette-owned, so it sits at the top
     Launcher/ Clipboard/ Calculator/ Calendar/ Emoji/ FileSearch/ MenuSearch/ Notes/
     Quicklinks/ Snippets/ Uninstall/ SystemActions/ CustomCommands/ HotKeys/ Backup/
-    WindowManagement/ Onboarding/ Updates/ Support/ AI/ Settings/
+    WindowManagement/ Onboarding/ Updates/ Support/ AI/ Themes/ Settings/
     Extensions/
         Model/      pure: the harness inputs
         Service/    effects: stores, monitors, runners, AppKit glue

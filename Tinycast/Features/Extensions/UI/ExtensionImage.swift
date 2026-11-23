@@ -68,7 +68,7 @@ enum ExtensionImage {
             resolve(value, assetsPath: assetsPath, isDark: isDark)
             ?? Resolved(source: .symbol(isDestructive ? "trash" : "bolt"))
         // Symbols only: a tint masks artwork, so reddening a delete row's own PNG would erase it.
-        if isDestructive, icon.tint == nil, case .symbol = icon.source { icon.tint = .red }
+        if isDestructive, icon.tint == nil, case .symbol = icon.source { icon.tint = Theme.Colors.destructive }
         return icon
     }
 

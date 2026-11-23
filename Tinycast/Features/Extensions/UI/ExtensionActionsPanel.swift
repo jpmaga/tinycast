@@ -67,7 +67,7 @@ struct ExtensionActionsPanel: View {
         let shape = UnevenRoundedRectangle(
             topLeadingRadius: metrics.radius.menuPanel,
             bottomLeadingRadius: metrics.radius.menuPanel,
-            bottomTrailingRadius: metrics.size.menuButton / 2,
+            bottomTrailingRadius: metrics.radius.capsuleRadius(diameter: metrics.size.menuButton),
             topTrailingRadius: metrics.radius.menuPanel,
             style: .continuous)
         return VStack(spacing: 0) {
@@ -90,7 +90,8 @@ struct ExtensionActionsPanel: View {
             return .handled
         }
         .frame(width: panel.width)
-        .glassEffect(.regular, in: shape)
+        .background(Theme.Colors.menuBackground, in: shape)
+        .themedGlass(in: shape)
         .clipShape(shape)
     }
 
@@ -206,7 +207,9 @@ private struct ExtensionActionRow: View {
                     resolved: item.icon, size: metrics.size.menuIcon, usesMenuSymbolStyle: true)
                 Text(item.title)
                     .font(metrics.typography.menuRow)
-                    .foregroundStyle(item.isDestructive ? Color.red : Color.primary)
+                    .foregroundStyle(
+                        item.isDestructive ? AnyShapeStyle(Theme.Colors.destructive) : AnyShapeStyle(.primary)
+                    )
                     .lineLimit(1)
                 Spacer(minLength: metrics.spacing.sm)
                 HStack(spacing: metrics.spacing.xxs) {
@@ -223,7 +226,7 @@ private struct ExtensionActionRow: View {
             )
             .contentShape(Rectangle())
             .background(
-                RoundedRectangle(cornerRadius: metrics.radius.menuRow, style: .continuous)
+                RoundedRectangle(cornerRadius: metrics.radius.menuRow(inset: panel.listInset), style: .continuous)
                     .fill(selected ? Theme.Colors.menuHover : Color.clear)
             )
         }

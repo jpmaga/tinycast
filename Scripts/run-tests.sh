@@ -114,6 +114,9 @@ run() {
 
 L=Tinycast/Features/Launcher/Model
 # What a sync source needs from iCloud Sync, for harnesses compiling a whole Service folder.
+THEME_SOURCES=(Tinycast/DesignSystem/Theme.swift Tinycast/DesignSystem/ThemePalette.swift
+               Tinycast/DesignSystem/ThemePresentation.swift)
+
 SYNC="Tinycast/Features/CloudSync/Model/*.swift Tinycast/Features/CloudSync/Service/SyncSource.swift Tinycast/Features/CloudSync/Service/RecordSyncSource.swift Tinycast/Features/Settings/Model/SettingsFileKey.swift Tinycast/DesignSystem/IconTint.swift"
 run slow -O FuzzTests      $L/SearchRelevance.swift $L/ScriptRomanization.swift \
                            $L/LauncherMatch.swift $L/EntryNaming.swift $L/LauncherOrder.swift \
@@ -265,8 +268,18 @@ run index EmojiSearchPerformanceTests \
                            Tinycast/Platform/AppPaths.swift Tinycast/Platform/Memo.swift
 run PaletteSelectionTests  Tinycast/Features/PaletteRowIndex.swift \
                            Tinycast/Features/Emoji/Model/EmojiGridGeometry.swift
+run ThemeTests             Tinycast/Platform/Appearance.swift "${THEME_SOURCES[@]}" \
+                           Tinycast/Platform/Images/SystemIconTheme.swift Tinycast/DesignSystem/IconTint.swift \
+                           Tinycast/Features/Themes/Model/*.swift
+
+run ThemeFileTests         Tinycast/Platform/Appearance.swift "${THEME_SOURCES[@]}" \
+                           Tinycast/Platform/Images/SystemIconTheme.swift Tinycast/DesignSystem/IconTint.swift \
+                           Tinycast/Platform/FileSystemEventSource.swift Tinycast/Platform/AppPaths.swift \
+                           Tinycast/Features/Themes/Model/*.swift Tinycast/Features/Themes/Service/*.swift
+
 run AppearanceTests        Tinycast/Platform/Appearance.swift \
-                           Tinycast/DesignSystem/Theme.swift \
+                           "${THEME_SOURCES[@]}" \
+                           Tinycast/DesignSystem/InterfaceFont.swift \
                            Tinycast/DesignSystem/InterfaceMetrics.swift \
                            Tinycast/Features/Settings/AppAppearance.swift \
                            Tinycast/Platform/Images/SystemIconTheme.swift \
@@ -275,21 +288,26 @@ run LanguageTests          Tinycast/Features/Settings/AppLanguage.swift
 run LocalizedResourceTests Tinycast/Platform/LocalizedResource.swift
 run RelaunchTests          Tinycast/App/AppDelegate.swift Tinycast/Platform/RelaunchRunner.swift
 run InterfaceSizeTests     Tinycast/Platform/Appearance.swift \
-                           Tinycast/DesignSystem/Theme.swift \
+                           "${THEME_SOURCES[@]}" \
                            Tinycast/Platform/Images/SystemIconTheme.swift \
+                           Tinycast/DesignSystem/InterfaceFont.swift \
                            Tinycast/DesignSystem/InterfaceMetrics.swift \
                            Tinycast/Features/Settings/InterfaceSize.swift \
                            Tinycast/Features/Extensions/Model/ExtensionFormMetrics.swift \
+                           Tinycast/Features/Settings/Model/InterfaceCornerRadius.swift \
+                           Tinycast/Features/Settings/Model/SettingsFileJSON.swift \
+                           Tinycast/Features/Settings/Model/SettingsFileValue.swift \
                            Tinycast/DesignSystem/IconTint.swift
 run PalettePlacementTests  Tinycast/Platform/Appearance.swift \
-                           Tinycast/DesignSystem/Theme.swift \
+                           "${THEME_SOURCES[@]}" \
                            Tinycast/Platform/Images/SystemIconTheme.swift \
+                           Tinycast/DesignSystem/InterfaceFont.swift \
                            Tinycast/DesignSystem/InterfaceMetrics.swift \
                            Tinycast/Features/Settings/InterfaceSize.swift \
                            Tinycast/Palette/PalettePlacement.swift \
                            Tinycast/DesignSystem/IconTint.swift
 run PaletteMenuClickTests  Tinycast/Platform/Appearance.swift \
-                           Tinycast/DesignSystem/Theme.swift \
+                           "${THEME_SOURCES[@]}" \
                            Tinycast/Platform/Images/SystemIconTheme.swift \
                            Tinycast/Platform/WindowLevel.swift \
                            Tinycast/Platform/NotificationToken.swift \
@@ -299,8 +317,9 @@ run PaletteMenuClickTests  Tinycast/Platform/Appearance.swift \
                            Tinycast/Palette/PalettePanel.swift \
                            Tinycast/DesignSystem/IconTint.swift
 run FormInputTests         Tinycast/Platform/Appearance.swift \
-                           Tinycast/DesignSystem/Theme.swift \
+                           "${THEME_SOURCES[@]}" \
                            Tinycast/Platform/Images/SystemIconTheme.swift \
+                           Tinycast/DesignSystem/InterfaceFont.swift \
                            Tinycast/DesignSystem/InterfaceMetrics.swift \
                            Tinycast/DesignSystem/FormTextInput.swift \
                            Tinycast/DesignSystem/FormTextArea.swift \
@@ -389,7 +408,7 @@ run DictationFieldTests    Tinycast/Features/Dictation/Model/DictationModel.swif
                            Tinycast/Features/Snippets/Model/*.swift \
                            Tinycast/Platform/AccessibilityText.swift \
                            Tinycast/Platform/PasteboardFiles.swift \
-                           Tinycast/Platform/Appearance.swift Tinycast/DesignSystem/Theme.swift \
+                           Tinycast/Platform/Appearance.swift "${THEME_SOURCES[@]}" \
                            Tinycast/Platform/Images/SystemIconTheme.swift \
                            Tinycast/DesignSystem/IconTint.swift
 run DictationVolumeTests   Tinycast/Features/Dictation/Model/DictationVolumeSnapshot.swift \
@@ -439,8 +458,9 @@ run HotKeyTests            Tinycast/Features/HotKeys/Model/DoubleTapModifier.swi
                            Tinycast/Platform/LocalizedResource.swift \
                            Tinycast/DesignSystem/IconTint.swift
 run CalloutTests           Tinycast/Platform/Appearance.swift \
-                           Tinycast/DesignSystem/Theme.swift \
+                           "${THEME_SOURCES[@]}" \
                            Tinycast/Platform/Images/SystemIconTheme.swift \
+                           Tinycast/DesignSystem/InterfaceFont.swift \
                            Tinycast/DesignSystem/InterfaceMetrics.swift \
                            Tinycast/Features/HotKeys/UI/CalloutPlacement.swift \
                            Tinycast/DesignSystem/IconTint.swift
@@ -458,7 +478,8 @@ run ExtensionIconTests     Tinycast/Platform/Appearance.swift \
                            Tinycast/Platform/Images/IconCache.swift \
                            Tinycast/Platform/Images/SystemIconTheme.swift \
                            Tinycast/Platform/Compression/Zlib.swift \
-                           Tinycast/DesignSystem/Theme.swift \
+                           "${THEME_SOURCES[@]}" \
+                           Tinycast/DesignSystem/InterfaceFont.swift \
                            Tinycast/DesignSystem/InterfaceMetrics.swift \
                            Tinycast/Features/Extensions/Model/ExtensionBootConfig.swift \
                            Tinycast/Features/Extensions/Model/ExtensionLaunchType.swift \
@@ -629,8 +650,9 @@ run NotesTests             Tinycast/Platform/Signposts.swift \
                            Tinycast/Features/Notes/Service/*.swift $SYNC
 run NotesEditorTests       Tinycast/Platform/Signposts.swift \
                            Tinycast/Platform/Appearance.swift \
-                           Tinycast/DesignSystem/Theme.swift \
+                           "${THEME_SOURCES[@]}" \
                            Tinycast/Platform/Images/SystemIconTheme.swift \
+                           Tinycast/DesignSystem/InterfaceFont.swift \
                            Tinycast/DesignSystem/InterfaceMetrics.swift \
                            Tinycast/Platform/NotificationToken.swift \
                            Tinycast/Features/TextInjection/Service/InjectableTextView.swift \
@@ -658,8 +680,9 @@ run NotesEditorTests       Tinycast/Platform/Signposts.swift \
 run -O index NotesEditorPerformanceTests \
                            Tinycast/Platform/Signposts.swift \
                            Tinycast/Platform/Appearance.swift \
-                           Tinycast/DesignSystem/Theme.swift \
+                           "${THEME_SOURCES[@]}" \
                            Tinycast/Platform/Images/SystemIconTheme.swift \
+                           Tinycast/DesignSystem/InterfaceFont.swift \
                            Tinycast/DesignSystem/InterfaceMetrics.swift \
                            Tinycast/Platform/NotificationToken.swift \
                            Tinycast/Features/TextInjection/Service/InjectableTextView.swift \
@@ -726,9 +749,10 @@ run HotKeyDispatchTests    Tinycast/Features/HotKeys/Model/DoubleTapModifier.swi
                            Tinycast/Platform/ASCIIKeyboardLayout.swift \
                            Tests/HotKeyDispatchFixtures.swift
 run SettingsFileTests      Tinycast/Features/Settings/Model/*.swift \
+                           Tinycast/DesignSystem/InterfaceFont.swift \
                            Tinycast/Features/Settings/Service/SettingsFileMonitor.swift \
                            Tinycast/Features/Settings/Service/SettingsFileRepository.swift \
-                           Tinycast/Platform/AppPaths.swift
+                           Tinycast/Platform/AppPaths.swift Tinycast/Platform/FileSystemEventSource.swift
 run BackupArchiveTests     Tinycast/Platform/AppPaths.swift \
                            Tinycast/Features/Backup/Model/BackupArchive.swift \
                            Tinycast/Features/Backup/Model/BackupBundle.swift \
@@ -812,7 +836,8 @@ run slow ExtensionTests    -parse-as-library \
                            Tinycast/Platform/AppDisplayName.swift \
                            Tinycast/Platform/Images/IconCache.swift \
                            Tinycast/Platform/Images/SystemIconTheme.swift \
-                           Tinycast/DesignSystem/Theme.swift \
+                           "${THEME_SOURCES[@]}" \
+                           Tinycast/DesignSystem/InterfaceFont.swift \
                            Tinycast/DesignSystem/InterfaceMetrics.swift \
                            $E/Model/ExtensionBootConfig.swift \
                            $E/Model/ExtensionDeepLink.swift \
@@ -913,8 +938,9 @@ run AIResponsesTests       Tinycast/Features/AI/Model/AIConnection.swift \
                            Tinycast/Features/AI/Service/AIProvider.swift \
                            Tinycast/Features/AI/Service/AIToolLoopProvider.swift
 run ChatMarkdownTests      Tinycast/Platform/Appearance.swift \
-                           Tinycast/DesignSystem/Theme.swift \
+                           "${THEME_SOURCES[@]}" \
                            Tinycast/Platform/Images/SystemIconTheme.swift \
+                           Tinycast/DesignSystem/InterfaceFont.swift \
                            Tinycast/DesignSystem/InterfaceMetrics.swift \
                            Tinycast/Features/Settings/InterfaceSize.swift \
                            Tinycast/Features/AI/Model/AIRequest.swift \

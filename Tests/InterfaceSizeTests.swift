@@ -24,6 +24,8 @@ struct InterfaceSizeTests {
     static func main() {
         theDefaultIsThemeVerbatim()
         fontsKeepTheirFace()
+        customFontsKeepStyleAndWeight()
+        cornerRoundnessComposesWithSize()
         everySizeRounds()
         sizesGrow()
         derivationsHold()
@@ -216,6 +218,61 @@ struct InterfaceSizeTests {
                 metrics.typography.searchFieldSize
                     == (Theme.Typography.searchFieldSize * size.scale).rounded(),
                 "the search field's stated size scales at \(size.rawValue)")
+        }
+    }
+
+    static func customFontsKeepStyleAndWeight() {
+        let family = "Avenir Next"
+        expect(InterfaceFont.isAvailable(family), "the macOS test family is installed")
+        let custom = InterfaceMetrics(scale: 1.2, fontFamily: family).typography
+        let system = InterfaceMetrics(scale: 1.2).typography
+        let body = custom.textNSFont(.body)
+        let headline = custom.textNSFont(.headline)
+        expect(body.familyName == family, "body resolves the selected family")
+        expect(headline.fontName == "AvenirNext-Bold", "headline keeps its bold weight")
+        expect(custom.textNSFont(.body, weight: .semibold).fontName == "AvenirNext-DemiBold",
+               "an explicit weight resolves the corresponding face")
+        expect(custom.textNSFont(.caption2).fontName == "AvenirNext-Medium", "caption2 stays medium")
+        expect(body.pointSize, system.textNSFont(.body).pointSize, "body keeps the scaled size")
+        expect(custom.searchFieldNSFont.pointSize, system.searchFieldNSFont.pointSize, "search keeps its size")
+        expect(custom.searchFieldNSFont.familyName == family, "AppKit search measurement uses the selected face")
+        expect(custom.chipNSFont.familyName == family, "AppKit chip measurement uses the selected face")
+        expect(custom.textNSFont(.body, monospaced: true) == system.textNSFont(.body, monospaced: true),
+               "system monospaced is independent of the selected family")
+        expect(custom.inlineCode == system.inlineCode && custom.code == system.code,
+               "SwiftUI code styles stay on the system monospaced face")
+
+        let missing = InterfaceMetrics(scale: 1.2, fontFamily: "Tinycast Missing Font").typography
+        expect(missing.textNSFont(.body) == system.textNSFont(.body), "a missing family uses the system font")
+        expect(missing.rowTitle == system.rowTitle, "a missing family keeps the SwiftUI system face")
+        expect(custom.textNSFont(.body, weight: .black) == system.textNSFont(.body, weight: .black),
+               "a missing weight does not substitute the family's nearest face")
+    }
+
+    static func cornerRoundnessComposesWithSize() {
+        let multipliers: [CGFloat] = [0, 0.5, 1, 1.3]
+        expect(InterfaceCornerRadius.allCases.map(\.multiplier) == multipliers, "the four radius steps")
+        let outline = CGRect(x: 0, y: 0, width: 40, height: 20)
+        for size in InterfaceSize.allCases {
+            for step in InterfaceCornerRadius.allCases {
+                let metrics = InterfaceMetrics(scale: size.scale, cornerMultiplier: step.multiplier)
+                expect(metrics.radius.panel, (Theme.Radius.panel * size.scale * step.multiplier).rounded(),
+                       "panel radius combines both scales before rounding")
+                expect(metrics.radius.row, (Theme.Radius.row * size.scale * step.multiplier).rounded(),
+                       "row radius combines both scales before rounding")
+                expect(metrics.radius.menuRow, max(0, metrics.radius.menuPanel - metrics.spacing.sm),
+                       "an inset row follows the rounded menu and its gap")
+                if step != .default {
+                    expect(metrics.radius.menuRow(inset: metrics.spacing.md),
+                           max(0, metrics.radius.menuPanel - metrics.spacing.md),
+                           "a customised menu row stays concentric at a wider inset")
+                }
+                let capsule = step == .square ? AnyShape(Rectangle()) : AnyShape(Capsule())
+                let circle = step == .square ? AnyShape(Rectangle()) : AnyShape(Circle())
+                expect(metrics.radius.capsule.path(in: outline) == capsule.path(in: outline), "capsule shape")
+                expect(metrics.radius.circle.path(in: outline) == circle.path(in: outline), "circle shape")
+                expect(metrics.spacing.sm, size.metrics.spacing.sm, "corner roundness leaves spacing alone")
+            }
         }
     }
 

@@ -54,7 +54,7 @@ struct FormTextArea: NSViewRepresentable {
             isCode
             ? NSFont.monospacedSystemFont(ofSize: bodyFont.pointSize, weight: .regular) : bodyFont
         if view.font != font { view.font = font }
-        let color = NSColor(Theme.Colors.textPrimary)
+        let color = context.environment.appKitThemeColor(Theme.Colors.textPrimary)
         if view.textColor != color { view.textColor = color }
         if view.insertionPointColor != color { view.insertionPointColor = color }
         let inset = NSSize(width: metrics.spacing.xl, height: metrics.spacing.md)

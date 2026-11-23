@@ -36,9 +36,15 @@ struct SettingsBackup: Codable {
         var popToRootSeconds: Int?
         var escapeKeyBehavior: String?
         var appearance: String?
+        var darkTheme: String?
+        var lightTheme: String?
+        var windowOpacity: Double?
+        var windowBlur: Bool?
         var language: String?
         var calcNumberStyle: String?
         var interfaceSize: String?
+        var interfaceFont: String?
+        var interfaceCornerRadius: String?
         var compactMode: Bool?
         var compactBarCommands: [String]?
         var searchScopes: [String]?

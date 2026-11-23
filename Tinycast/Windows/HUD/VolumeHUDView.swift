@@ -1,44 +1,45 @@
 import SwiftUI
 
 struct VolumeHUDView: View {
+    @Environment(\.metrics) private var metrics
     let state: VolumeState
 
     var body: some View {
-        VStack(spacing: Theme.Spacing.lg) {
+        VStack(spacing: metrics.spacing.lg) {
             SymbolImage(
                 name: VolumeLevel.symbol(level: state.level, muted: state.muted),
-                size: Theme.Size.dialogIcon
+                size: metrics.size.dialogIcon
             )
-            .foregroundStyle(Color.primary)
-            HStack(spacing: Theme.Spacing.md) {
+            .foregroundStyle(.primary)
+            HStack(spacing: metrics.spacing.md) {
                 GeometryReader { geometry in
                     ZStack(alignment: .leading) {
-                        Capsule()
+                        metrics.radius.capsule
                             .fill(Theme.Colors.controlSurface)
-                        Capsule()
+                        metrics.radius.capsule
                             .fill(Theme.Colors.textPrimary.opacity(state.muted ? 0.35 : 0.85))
                             .frame(width: geometry.size.width * fill)
                     }
                 }
-                .frame(height: Theme.Size.volumeTrackHeight)
+                .frame(height: metrics.size.volumeTrackHeight)
                 // Muted prints the word: the bar is empty, and a number would contradict it.
                 Text(
                     state.muted
                         ? String(localized: "Muted") : VolumeLevel.percentage(state.level, locale: .current)
                 )
-                .font(Theme.Typography.rowTrailing)
+                .font(metrics.typography.rowTrailing)
                 .foregroundStyle(Theme.Colors.textSecondary)
                 .monospacedDigit()
-                .frame(width: Theme.Size.volumeReadout, alignment: .trailing)
+                .frame(width: metrics.size.volumeReadout, alignment: .trailing)
             }
         }
         // Asymmetric: side padding costs far more on a 200pt box than a 420pt dialog.
-        .padding(.vertical, Theme.Spacing.xxl)
-        .padding(.horizontal, Theme.Spacing.xl)
-        .frame(width: Theme.Size.hudWidth, height: Theme.Size.hudHeight)
+        .padding(.vertical, metrics.spacing.xxl)
+        .padding(.horizontal, metrics.spacing.xl)
+        .frame(width: metrics.size.hudWidth, height: metrics.size.hudHeight)
         .background(Theme.Colors.panelScrim)
         .background(GlassEffectView())
-        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.dialog, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: metrics.radius.dialog, style: .continuous))
         .panelEntrance()
         // A repeat command slides the bar to its new value instead of cutting to it.
         .animation(.easeOut(duration: Theme.Duration.exit), value: state.level)

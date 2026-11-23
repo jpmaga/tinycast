@@ -7,6 +7,7 @@ final class NoteMarkdownRenderer: NSObject, @MainActor NSTextStorageDelegate {
     private(set) var revealed = IndexSet()
     /// The Render Markdown setting; flipping it takes effect on the next `reset()`.
     var isEnabled: Bool
+    var styler: NoteMarkdownStyler
     weak var textView: NoteTextView? {
         didSet { textView?.textStorage?.delegate = self }
     }
@@ -15,8 +16,9 @@ final class NoteMarkdownRenderer: NSObject, @MainActor NSTextStorageDelegate {
     private var pendingEdit: (old: NSRange, new: NSRange)?
     private var isStyling = false
 
-    init(isEnabled: Bool) {
+    init(isEnabled: Bool, metrics: InterfaceMetrics = .standard) {
         self.isEnabled = isEnabled
+        styler = NoteMarkdownStyler(metrics: metrics)
         super.init()
     }
 
@@ -25,19 +27,21 @@ final class NoteMarkdownRenderer: NSObject, @MainActor NSTextStorageDelegate {
         guard let textView, let storage = textView.textStorage else { return }
         NoteMarkdownStyler.invalidateColors()
         pendingEdit = nil
+        textView.placeholderFont = styler.typography.body
+        textView.needsDisplay = true
         guard isEnabled else {
             markdown = .empty
             revealed = []
             restyle(NSRange(location: 0, length: storage.length)) {
-                storage.setAttributes(NoteMarkdownStyler.literal, range: $0)
+                storage.setAttributes(styler.literal, range: $0)
             }
-            textView.typingAttributes = NoteMarkdownStyler.literal
+            textView.typingAttributes = styler.literal
             return
         }
         markdown = NoteMarkdownParser.parse(units: Self.units(of: storage))
         revealed = nextRevealed()
         apply(IndexSet(integersIn: markdown.lines.indices))
-        textView.typingAttributes = NoteMarkdownStyler.literal
+        textView.typingAttributes = styler.literal
     }
 
     func sourceDidChange() {
@@ -53,7 +57,7 @@ final class NoteMarkdownRenderer: NSObject, @MainActor NSTextStorageDelegate {
         let changed = revealed.symmetricDifference(next)
         revealed = next
         if !changed.isEmpty { apply(changed) }
-        textView.typingAttributes = NoteMarkdownStyler.literal
+        textView.typingAttributes = styler.literal
     }
 
     /// Left alone mid-edit: a pending edit means the parse no longer matches the text.
@@ -165,7 +169,7 @@ final class NoteMarkdownRenderer: NSObject, @MainActor NSTextStorageDelegate {
                 markdown.lines[lines.lowerBound].range, markdown.lines[lines.upperBound - 1].range)
             restyle(span) { _ in
                 for index in lines {
-                    let style = NoteMarkdownStyler.style(
+                    let style = styler.style(
                         at: index, in: markdown, text: text, isRevealed: revealed.contains(index))
                     textView.textStorage?.setAttributes(style.base, range: markdown.lines[index].range)
                     for run in style.runs {

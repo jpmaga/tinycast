@@ -126,7 +126,7 @@ final class DialogController: NSObject, NSWindowDelegate {
                         self?.finish(index)
                     }),
                 width: width, minHeight: 0)
-            let panel = DialogPanel(content: content, cornerRadius: metrics.radius.panel)
+            let panel = DialogPanel(content: content, metrics: metrics)
             panel.handlesArrowKeys = request.accessory?.claimsArrowKeys ?? false
             panel.acceptsLineBreaks = request.accessory?.acceptsLineBreaks ?? false
             panel.handlesTabKey = request.accessory?.claimsTabKey ?? false
@@ -169,11 +169,26 @@ final class DialogController: NSObject, NSWindowDelegate {
         closing?.orderOut(nil)
     }
 
-    private var metrics: InterfaceMetrics { settings.interfaceSize.metrics }
+    func applyInterfaceAppearance() {
+        guard let panel, let hosting = panel.contentView as? NSHostingView<AnyView> else { return }
+        let metrics = settings.interfaceMetrics(at: panel.interfaceScale)
+        hosting.layer?.cornerRadius = metrics.radius.panel
+        hosting.layoutSubtreeIfNeeded()
+        let frame = panel.frame
+        let height = hosting.fittingSize.height
+        if height > 0, height != frame.height {
+            panel.setFrame(
+                CGRect(x: frame.minX, y: frame.midY - height / 2, width: frame.width, height: height),
+                display: true)
+        }
+        panel.invalidateShadow()
+    }
+
+    private var metrics: InterfaceMetrics { settings.interfaceMetrics }
 
     private func hostingView(_ view: some View, width: CGFloat, minHeight: CGFloat) -> NSView {
         let hosting = NSHostingView(
-            rootView: AnyView(view.environment(\.metrics, metrics).motionScope()))
+            rootView: AnyView(view.interfaceMetrics(settings, fixedScale: metrics.scale).motionScope().themeScope()))
         // Measure at the fixed width first: the message wraps, so height follows width.
         hosting.setFrameSize(NSSize(width: width, height: minHeight))
         let fitted = hosting.fittingSize

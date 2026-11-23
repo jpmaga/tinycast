@@ -34,6 +34,8 @@ final class AppCore {
     let spaceSwitcher = SpaceSwitcher()
     let inputSourceSwitcher = InputSourceSwitcher()
     let settings: AppSettings
+    let themes = ThemeStore(appliesThemes: ProcessRole.current == .main)
+    @ObservationIgnored private var themeFileMonitor: ThemeFileMonitor?
     /// Mirrors settings into settings.json; nil while the Backup pane's switch is off.
     @ObservationIgnored private var settingsFile: SettingsFileRepository?
     @ObservationIgnored private(set) lazy var settingsBindings = makeSettingsBindings()
@@ -465,16 +467,19 @@ final class AppCore {
 
     /// Stops only what Settings' process started for its panes; the main app's engines are its own.
     func prepareSettingsForTermination() {
+        themeFileMonitor?.stop()
         snippetsStore.stop()
         chatGPTSubscription.stop()
         installedAI.stop()
     }
 
-    /// Both roles: preferences applied and stores loaded; nothing here registers, taps or polls.
+    /// Both roles load preferences and start the services their shared settings depend on.
     private func load() {
         // Shorten AppKit's ~2–3s tooltip delay; registration domain, so a user default wins.
         UserDefaults.standard.register(defaults: ["NSInitialToolTipDelay": 250])
         applyAppearance()
+        applyThemes()
+        startThemeFiles()
         applyMotion()
         applyIconStyle()
         observeEffectiveAppearance()
@@ -666,6 +671,7 @@ final class AppCore {
     }
 
     func prepareForTermination() {
+        themeFileMonitor?.stop()
         if settings.dictationEnabled { dictationCoordinator.prepareForTermination() }
         settingsFile?.flush()
         cloudSyncCoordinator.flush()
@@ -743,6 +749,14 @@ final class AppCore {
     /// Both roles: what a shown surface or a recorder's conflict check reads.
     private func observeSharedSettings() {
         track({ _ = $0.appearance }, reproject: { $0.applyAppearance() })
+        track(
+            {
+                _ = $0.darkTheme
+                _ = $0.lightTheme
+                _ = $0.windowOpacity
+                _ = $0.windowBlur
+            },
+            reproject: { $0.applyThemes() })
         track({ _ = $0.animationsEnabled }, reproject: { $0.applyMotion() })
         track({ _ = $0.iconStyle }, reproject: { $0.applyIconStyle() })
         track(
@@ -858,6 +872,11 @@ final class AppCore {
             reproject: { $0.snippetCoordinator.applySnippetsLauncherPresence() })
         track({ _ = $0.language }, reproject: { $0.offerLanguageRelaunch() })
         track({ _ = $0.interfaceSize }, reproject: { $0.windowController.applyInterfaceSize() })
+        track(
+            {
+                _ = $0.interfaceFont
+                _ = $0.interfaceCornerRadius
+            }, reproject: { $0.dialogs.applyInterfaceAppearance() })
         // Settings panes did these on change; settings.json can change them with no pane open.
         track(
             { _ = $0.clipboardRetention },
@@ -884,6 +903,26 @@ final class AppCore {
     /// `.system` resolves to `nil`, so AppKit follows macOS with nothing polling.
     private func applyAppearance() {
         NSApp.appearance = settings.appearance.nsAppearance
+    }
+
+    private func applyThemes() {
+        themes.apply(
+            darkID: settings.darkTheme, lightID: settings.lightTheme,
+            opacity: settings.windowOpacity, blur: settings.windowBlur)
+    }
+
+    private func startThemeFiles() {
+        let reportsIssues = ProcessRole.current == .main
+        let monitor = ThemeFileMonitor(folder: AppPaths.themesFolder()) { [weak self] snapshot in
+            guard let self else { return }
+            let previous = reportsIssues ? Set(themes.fileIssues) : []
+            themes.applyFiles(snapshot)
+            if reportsIssues, let first = themes.fileIssues.first(where: { !previous.contains($0) }) {
+                showMessage(first.message, tone: .danger)
+            }
+        }
+        themeFileMonitor = monitor
+        monitor.start()
     }
 
     /// A built panel keeps the behaviour it was made with, so the live ones are re-pointed.

@@ -87,7 +87,7 @@ final class MenuPanelController {
         // Open disarmed: a menu opened by click lands under the pointer, which chose no row of it.
         core.palette.disarmHoverHighlight(pointerAt: NSEvent.mouseLocation)
         layout(
-            corner: corner, parent: parent, metrics: core.settings.interfaceSize.metrics,
+            corner: corner, parent: parent, metrics: core.settings.interfaceMetrics,
             force: true)
         if panel.parent == nil { parent.addChildWindow(panel, ordered: .above) }
         panel.makeKey()
@@ -99,11 +99,12 @@ final class MenuPanelController {
         guard let panel, panel.isVisible, let parent else { return }
         setContent(AnyView(content.paletteEnvironment(core)), in: panel)
         layout(
-            corner: corner, parent: parent, metrics: core.settings.interfaceSize.metrics,
+            corner: corner, parent: parent, metrics: core.settings.interfaceMetrics,
             force: false)
     }
 
-    private func setContent(_ root: AnyView, in panel: MenuPanel) {
+    private func setContent(_ content: AnyView, in panel: MenuPanel) {
+        let root = AnyView(content.themeScope())
         if let hosting {
             hosting.rootView = root
             return

@@ -125,10 +125,11 @@ struct PopoverMenu: View {
     var body: some View {
         let shape = SurfaceShape(
             attachment: attachment, radius: metrics.radius.menuPanel,
-            attachedRadius: metrics.size.menuButton / 2)
+            attachedRadius: metrics.radius.capsuleRadius(diameter: metrics.size.menuButton))
         surfaceContent
             .frame(width: width ?? metrics.size.actionMenuWidth)
-            .glassEffect(.regular, in: shape)
+            .background(Theme.Colors.menuBackground, in: shape)
+            .themedGlass(in: shape)
             .clipShape(shape)
     }
 
@@ -367,14 +368,16 @@ private struct PopoverMenuRow: View {
                             )
                             .symbolRenderingMode(.monochrome)
                             .foregroundStyle(
-                                item.isDestructive ? Color.red : Theme.Colors.menuSymbol
+                                item.isDestructive ? Theme.Colors.destructive : Theme.Colors.menuSymbol
                             )
                             .frame(width: metrics.size.menuIcon, height: metrics.size.menuIcon)
                     case .asset(let name):
                         Image(name)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .foregroundStyle(item.isDestructive ? Color.red : Color.secondary)
+                            .foregroundStyle(
+                                item.isDestructive ? AnyShapeStyle(Theme.Colors.destructive) : AnyShapeStyle(.secondary)
+                            )
                             .frame(width: metrics.size.menuBrandIcon, height: metrics.size.menuBrandIcon)
                             .frame(width: metrics.size.menuIcon, height: metrics.size.menuIcon)
                     case .file(let path):
@@ -385,7 +388,9 @@ private struct PopoverMenuRow: View {
                 }
                 Text(item.title)
                     .font(metrics.typography.menuRow)
-                    .foregroundStyle(item.isDestructive ? Color.red : Color.primary)
+                    .foregroundStyle(
+                        item.isDestructive ? AnyShapeStyle(Theme.Colors.destructive) : AnyShapeStyle(.primary)
+                    )
                     .lineLimit(1)
                 Spacer(minLength: metrics.spacing.sm)
                 if let detail = item.detail {
@@ -413,7 +418,7 @@ private struct PopoverMenuRow: View {
             )
             .contentShape(Rectangle())
             .background(
-                RoundedRectangle(cornerRadius: metrics.radius.menuRow, style: .continuous)
+                RoundedRectangle(cornerRadius: metrics.radius.menuRow(inset: metrics.spacing.md), style: .continuous)
                     .fill(selected ? Theme.Colors.menuHover : Color.clear)
             )
             .opacity(item.isEnabled ? 1 : 0.45)

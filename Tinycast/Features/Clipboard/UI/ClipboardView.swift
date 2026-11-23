@@ -76,7 +76,7 @@ struct ClipboardList: View {
                                     onActivate()
                                 },
                                 drag: RowDrag(
-                                    item: { onDragPayload(item)?.dragItem }, dropped: onDropped)
+                                    item: { onDragPayload(item)?.dragItem(metrics: metrics) }, dropped: onDropped)
                             )
                         }
                     }
@@ -391,7 +391,7 @@ private struct ClipboardInfoSection: View {
                         }
                         Text(row.value).lineLimit(1).truncationMode(.middle)
                     }
-                    .font(.callout)
+                    .font(metrics.typography.rowTrailing)
                     .padding(.vertical, metrics.spacing.sm)
                 }
             }

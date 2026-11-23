@@ -15,7 +15,7 @@ struct MeetingCard: View {
             .foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: metrics.spacing.xs) {
                 Text(meeting.title)
-                    .font(metrics.typography.calcResult.weight(.semibold))
+                    .font(metrics.typography.font(Theme.Typography.calcResult.weight(.semibold), .title1, weight: .semibold))
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
                 HStack(spacing: metrics.spacing.sm) {
@@ -28,7 +28,7 @@ struct MeetingCard: View {
             }
             Spacer(minLength: metrics.spacing.md)
             Text(UpcomingWindow.countdown(to: meeting.start, now: now, locale: .current))
-                .font(metrics.typography.rowTitle.weight(.medium))
+                .font(metrics.typography.font(Theme.Typography.rowTitle.weight(.medium), .body, weight: .medium))
                 .lineLimit(1)
                 .padding(.horizontal, metrics.spacing.md)
                 .padding(.vertical, metrics.spacing.xxs)

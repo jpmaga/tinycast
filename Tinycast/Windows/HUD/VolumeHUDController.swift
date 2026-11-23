@@ -22,9 +22,9 @@ final class VolumeHUDController {
         if showing {
             presenter.extend()
         } else {
-            let metrics = settings.interfaceSize.metrics
+            let metrics = settings.interfaceMetrics
             presenter.show(
-                VolumeHUDView(state: state).environment(\.metrics, metrics),
+                VolumeHUDView(state: state).interfaceMetrics(settings, fixedScale: metrics.scale),
                 size: CGSize(width: metrics.size.hudWidth, height: metrics.size.hudHeight))
         }
     }

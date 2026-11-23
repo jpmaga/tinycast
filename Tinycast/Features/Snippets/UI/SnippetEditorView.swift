@@ -135,7 +135,7 @@ struct SnippetEditorView: View {
             if let errorMessage = editor.errorMessage {
                 Text(errorMessage)
                     .font(metrics.typography.rowTrailing)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Theme.Colors.warning)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }

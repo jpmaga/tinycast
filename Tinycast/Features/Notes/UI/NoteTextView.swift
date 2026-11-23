@@ -3,6 +3,7 @@ import AppKit
 @MainActor
 final class NoteTextView: NSTextView, InjectableTextView {
     var editorUndoManager: UndoManager?
+    var placeholderFont = NoteMarkdownTypography.standard.body
     weak var editing: NoteTextViewEditing?
     /// True during `mouseDown`'s drag loop; revealing mid-drag would shift text under the pointer.
     private(set) var isDragSelecting = false
@@ -75,8 +76,8 @@ final class NoteTextView: NSTextView, InjectableTextView {
         NSAttributedString(
             string: String(localized: "Start writing…"),
             attributes: [
-                .font: NoteMarkdownTypography.body,
-                .foregroundColor: NSColor(Theme.Colors.textTertiary)
+                .font: placeholderFont,
+                .foregroundColor: ThemeRendering.appKitColor(Theme.Colors.textTertiary)
             ]
         ).draw(at: textContainerOrigin)
     }

@@ -1,19 +1,29 @@
 import AppKit
 
-/// The editor's `NSFont`s: the system text styles one step up, since a note is for reading.
+/// The editor uses styles one step up because a note is for reading.
 @MainActor
-enum NoteMarkdownTypography {
-    static let body = NSFont.systemFont(ofSize: size(.title3))
-    static let heading1 = NSFont.systemFont(ofSize: size(.largeTitle), weight: .bold)
-    static let heading2 = NSFont.systemFont(ofSize: size(.title1), weight: .bold)
-    static let heading3 = NSFont.systemFont(ofSize: size(.title2), weight: .semibold)
-    static let inlineCode = NSFont.monospacedSystemFont(ofSize: body.pointSize, weight: .regular)
-    static let codeBlock = NSFont.monospacedSystemFont(ofSize: body.pointSize - 1, weight: .regular)
-    /// Small enough that a hidden marker leaves no visible gap, while staying a real glyph run.
+struct NoteMarkdownTypography {
+    static let standard = NoteMarkdownTypography(metrics: .standard)
+
+    let body: NSFont
+    let heading1: NSFont
+    let heading2: NSFont
+    let heading3: NSFont
+    let caption: NSFont
+    let codeBlock: NSFont
     static let hidden = NSFont.systemFont(ofSize: 0.01)
 
-    /// Levels 4 to 6 share the third heading's style.
-    static func heading(_ level: Int) -> NSFont {
+    init(metrics: InterfaceMetrics) {
+        let typography = metrics.typography
+        body = typography.textNSFont(.title3, weight: .regular)
+        heading1 = typography.textNSFont(.largeTitle, weight: .bold)
+        heading2 = typography.textNSFont(.title1, weight: .bold)
+        heading3 = typography.textNSFont(.title2, weight: .semibold)
+        caption = typography.textNSFont(.caption1, weight: .regular)
+        codeBlock = NSFont.monospacedSystemFont(ofSize: body.pointSize - 1, weight: .regular)
+    }
+
+    func heading(_ level: Int) -> NSFont {
         switch level {
         case 1: heading1
         case 2: heading2
@@ -23,16 +33,17 @@ enum NoteMarkdownTypography {
 
     static func adding(_ traits: NSFontDescriptor.SymbolicTraits, to font: NSFont) -> NSFont {
         let current = font.fontDescriptor.symbolicTraits
-        let descriptor = font.fontDescriptor.withSymbolicTraits(current.union(traits))
-        return NSFont(descriptor: descriptor, size: font.pointSize) ?? font
-    }
-
-    private static func size(_ style: NSFont.TextStyle) -> CGFloat {
-        NSFont.preferredFont(forTextStyle: style).pointSize
-    }
-
-    static func inlineCode(matching font: NSFont) -> NSFont {
-        font.pointSize == body.pointSize
-            ? inlineCode : NSFont.monospacedSystemFont(ofSize: font.pointSize, weight: .regular)
+        let requested = current.union(traits)
+        let descriptor = font.fontDescriptor.withSymbolicTraits(requested)
+        if let face = NSFont(descriptor: descriptor, size: font.pointSize),
+            face.familyName == font.familyName,
+            face.fontDescriptor.symbolicTraits.isSuperset(of: requested)
+        {
+            return face
+        }
+        let fallback = NSFont.systemFont(ofSize: font.pointSize, weight: requested.contains(.bold) ? .bold : .regular)
+        guard requested.contains(.italic) else { return fallback }
+        let italic = fallback.fontDescriptor.withSymbolicTraits(fallback.fontDescriptor.symbolicTraits.union(.italic))
+        return NSFont(descriptor: italic, size: font.pointSize) ?? fallback
     }
 }

@@ -1,15 +1,16 @@
 import SwiftUI
 
-/// `Theme`'s palette geometry at the user's Interface Size; `.standard` is `Theme` verbatim.
 struct InterfaceMetrics: Equatable, Sendable {
-    static let standard = InterfaceMetrics(scale: 1)
+    static let standard = InterfaceMetrics()
 
-    let scale: CGFloat
+    var scale: CGFloat = 1
+    var fontFamily = InterfaceFont.system
+    var cornerMultiplier: CGFloat = 1
 
     var spacing: Spacing { Spacing(scale: scale) }
-    var radius: Radius { Radius(scale: scale) }
+    var radius: Radius { Radius(scale: scale, multiplier: cornerMultiplier) }
     var size: Size { Size(scale: scale) }
-    var typography: Typography { Typography(scale: scale) }
+    var typography: Typography { Typography(scale: scale, fontFamily: fontFamily) }
 
     /// For a tuned length a surface owns itself, where `Theme` states no token for it.
     func scaled(_ value: CGFloat) -> CGFloat { scaledPoints(value, scale) }
@@ -34,26 +35,38 @@ struct InterfaceMetrics: Equatable, Sendable {
         var chatLine: CGFloat { scaledPoints(Theme.Spacing.chatLine, scale) }
     }
 
-    struct Radius: Equatable, Sendable {
+    struct Radius: Hashable, Sendable {
         let scale: CGFloat
+        let multiplier: CGFloat
 
-        var panel: CGFloat { scaledPoints(Theme.Radius.panel, scale) }
-        var row: CGFloat { scaledPoints(Theme.Radius.row, scale) }
-        var formField: CGFloat { scaledPoints(Theme.Radius.formField, scale) }
-        var emojiCell: CGFloat { scaledPoints(Theme.Radius.emojiCell, scale) }
-        var menu: CGFloat { scaledPoints(Theme.Radius.menu, scale) }
-        var menuRow: CGFloat { scaledPoints(Theme.Radius.menuRow, scale) }
-        var barControl: CGFloat { scaledPoints(Theme.Radius.barControl, scale) }
-        var menuPanel: CGFloat { scaledPoints(Theme.Radius.menuPanel, scale) }
-        var dialogSymbol: CGFloat { scaledPoints(Theme.Radius.dialogSymbol, scale) }
-        var dialog: CGFloat { scaledPoints(Theme.Radius.dialog, scale) }
-        var thumbnail: CGFloat { scaledPoints(Theme.Radius.thumbnail, scale) }
-        var glyph: CGFloat { scaledPoints(Theme.Radius.glyph, scale) }
-        var attachmentChip: CGFloat { scaledPoints(Theme.Radius.attachmentChip, scale) }
-        var card: CGFloat { scaledPoints(Theme.Radius.card, scale) }
-        var codeBlock: CGFloat { scaledPoints(Theme.Radius.codeBlock, scale) }
-        var keyCap: CGFloat { scaledPoints(Theme.Radius.keyCap, scale) }
-        var tooltip: CGFloat { scaledPoints(Theme.Radius.tooltip, scale) }
+        var panel: CGFloat { scaled(Theme.Radius.panel) }
+        var row: CGFloat { scaled(Theme.Radius.row) }
+        var formField: CGFloat { scaled(Theme.Radius.formField) }
+        var emojiCell: CGFloat { scaled(Theme.Radius.emojiCell) }
+        var menu: CGFloat { scaled(Theme.Radius.menu) }
+        var menuRow: CGFloat { menuRow(inset: Spacing(scale: scale).sm) }
+
+        func menuRow(inset: CGFloat) -> CGFloat {
+            multiplier == 1 ? scaled(Theme.Radius.menuRow) : max(0, menuPanel - inset)
+        }
+        var barControl: CGFloat { scaled(Theme.Radius.barControl) }
+        var menuPanel: CGFloat { scaled(Theme.Radius.menuPanel) }
+        var dialogSymbol: CGFloat { scaled(Theme.Radius.dialogSymbol) }
+        var dialog: CGFloat { scaled(Theme.Radius.dialog) }
+        var thumbnail: CGFloat { scaled(Theme.Radius.thumbnail) }
+        var glyph: CGFloat { scaled(Theme.Radius.glyph) }
+        var attachmentChip: CGFloat { scaled(Theme.Radius.attachmentChip) }
+        var card: CGFloat { scaled(Theme.Radius.card) }
+        var codeBlock: CGFloat { scaled(Theme.Radius.codeBlock) }
+        var keyCap: CGFloat { scaled(Theme.Radius.keyCap) }
+        var tooltip: CGFloat { scaled(Theme.Radius.tooltip) }
+
+        var hasSquareCorners: Bool { multiplier == 0 }
+        func capsuleRadius(diameter: CGFloat) -> CGFloat { hasSquareCorners ? 0 : diameter / 2 }
+        var capsule: AnyShape { hasSquareCorners ? AnyShape(Rectangle()) : AnyShape(Capsule()) }
+        var circle: AnyShape { hasSquareCorners ? AnyShape(Rectangle()) : AnyShape(Circle()) }
+
+        func scaled(_ value: CGFloat) -> CGFloat { scaledPoints(value, scale * multiplier) }
     }
 
     struct Size: Equatable, Sendable {
@@ -141,76 +154,103 @@ struct InterfaceMetrics: Equatable, Sendable {
         var volumeReadout: CGFloat { scaledPoints(Theme.Size.volumeReadout, scale) }
     }
 
-    /// `NSFont` is the only public source of a text style's size and face.
     struct Typography: Sendable {
         let scale: CGFloat
+        let fontFamily: String
 
         var searchFieldSize: CGFloat { scaledPoints(Theme.Typography.searchFieldSize, scale) }
-        var searchField: Font {
-            scale == 1
-                ? Theme.Typography.searchField
-                : .system(size: searchFieldSize, weight: .regular)
+        @MainActor var searchField: Font {
+            let fallback = scale == 1 ? Theme.Typography.searchField : Font.system(size: searchFieldSize, weight: .regular)
+            return font(fallback, matching: searchFieldSystemFont)
         }
-        /// Isolated because `Theme`'s twin is, not because resolving a font needs main.
+
         @MainActor var searchFieldNSFont: NSFont {
+            InterfaceFont.resolve(fontFamily, matching: searchFieldSystemFont) ?? searchFieldSystemFont
+        }
+
+        @MainActor private var searchFieldSystemFont: NSFont {
             scale == 1
                 ? Theme.Typography.searchFieldNSFont
                 : NSFont.systemFont(ofSize: searchFieldSize, weight: .regular)
         }
+
         var headerIcon: Font {
             scale == 1
                 ? Theme.Typography.headerIcon
                 : .system(size: scaledPoints(Theme.Typography.headerIconSize, scale), weight: .medium)
         }
 
-        var rowTitle: Font { font(Theme.Typography.rowTitle, .body) }
-        var rowTrailing: Font { font(Theme.Typography.rowTrailing, .callout) }
-        var sectionHeader: Font { font(Theme.Typography.sectionHeader, .subheadline, .medium) }
-        var panelTitle: Font { font(Theme.Typography.panelTitle, .headline) }
-        var calcResult: Font { font(Theme.Typography.calcResult, .title1) }
-        var keyCap: Font { font(Theme.Typography.keyCap, .caption1) }
-        var compactKeyCap: Font { font(Theme.Typography.compactKeyCap, .caption2) }
-        var heroKeyCap: Font { font(Theme.Typography.heroKeyCap, .body) }
-        var markdownHeading1: Font { font(Theme.Typography.markdownHeading1, .title2, .semibold) }
-        var markdownHeading2: Font { font(Theme.Typography.markdownHeading2, .title3, .semibold) }
-        var markdownHeading3: Font { font(Theme.Typography.markdownHeading3, .headline) }
+        @MainActor var rowTitle: Font { font(Theme.Typography.rowTitle, .body) }
+        @MainActor var rowTrailing: Font { font(Theme.Typography.rowTrailing, .callout) }
+        @MainActor var sectionHeader: Font { font(Theme.Typography.sectionHeader, .subheadline, weight: .medium) }
+        @MainActor var panelTitle: Font { font(Theme.Typography.panelTitle, .headline) }
+        @MainActor var calcResult: Font { font(Theme.Typography.calcResult, .title1) }
+        @MainActor var keyCap: Font { font(Theme.Typography.keyCap, .caption1) }
+        @MainActor var compactKeyCap: Font { font(Theme.Typography.compactKeyCap, .caption2) }
+        @MainActor var heroKeyCap: Font { font(Theme.Typography.heroKeyCap, .body) }
+        @MainActor var markdownHeading1: Font {
+            font(Theme.Typography.markdownHeading1, .title2, weight: .semibold)
+        }
+        @MainActor var markdownHeading2: Font {
+            font(Theme.Typography.markdownHeading2, .title3, weight: .semibold)
+        }
+        @MainActor var markdownHeading3: Font { font(Theme.Typography.markdownHeading3, .headline) }
         var code: Font {
             scale == 1
                 ? Theme.Typography.code
-                : .system(size: nsFont(.callout).pointSize, design: .monospaced)
+                : .system(size: systemFont(.callout).pointSize, design: .monospaced)
         }
-        var inlineCode: Font { font(Theme.Typography.inlineCode, .body).monospaced() }
-        var bar: Font { font(Theme.Typography.bar, .callout, .medium) }
-        var chip: Font { font(Theme.Typography.chip, .callout) }
-        @MainActor var chipNSFont: NSFont { scale == 1 ? Theme.Typography.chipNSFont : nsFont(.callout) }
-        var disclosure: Font { font(Theme.Typography.disclosure, .caption1, .semibold) }
-        var menuRow: Font { font(Theme.Typography.menuRow, .body) }
-        var menuShortcut: Font { font(Theme.Typography.menuShortcut, .callout) }
-        var menuIcon: Font { font(Theme.Typography.menuIcon, .body) }
+        var inlineCode: Font { scale == 1 ? Theme.Typography.inlineCode : Font(systemFont(.body)).monospaced() }
+        @MainActor var bar: Font { font(Theme.Typography.bar, .callout, weight: .medium) }
+        @MainActor var chip: Font { font(Theme.Typography.chip, .callout) }
+        @MainActor var chipNSFont: NSFont {
+            if scale == 1, fontFamily == InterfaceFont.system { return Theme.Typography.chipNSFont }
+            return textNSFont(.callout)
+        }
+        @MainActor var disclosure: Font {
+            scale == 1 ? Theme.Typography.disclosure : Font(systemFont(.caption1)).weight(.semibold)
+        }
+        @MainActor var menuRow: Font { font(Theme.Typography.menuRow, .body) }
+        @MainActor var menuShortcut: Font { font(Theme.Typography.menuShortcut, .callout) }
+        @MainActor var menuIcon: Font { scale == 1 ? Theme.Typography.menuIcon : Font(systemFont(.body)) }
 
-        /// The AppKit twin of a text style, for text an `NSTextView` draws beside SwiftUI's own.
+        @MainActor
         func textNSFont(
             _ style: NSFont.TextStyle, weight: NSFont.Weight? = nil, monospaced: Bool = false
         ) -> NSFont {
-            let base = nsFont(style)
+            let base = systemFont(style)
             if monospaced { return .monospacedSystemFont(ofSize: base.pointSize, weight: weight ?? .regular) }
-            guard let weight else { return base }
-            return .systemFont(ofSize: base.pointSize, weight: weight)
+            let fallback = weight.map { NSFont.systemFont(ofSize: base.pointSize, weight: $0) } ?? base
+            guard fontFamily != InterfaceFont.system else { return fallback }
+            let reference = matchingFont(for: style, systemFont: base, explicitWeight: weight)
+            return InterfaceFont.resolve(fontFamily, matching: reference) ?? fallback
         }
 
-        /// Like `Theme`'s own: the style carries the face, an explicit weight overrides it.
-        private func font(
-            _ base: Font, _ style: NSFont.TextStyle, _ weight: Font.Weight? = nil
-        )
-            -> Font
-        {
-            guard scale != 1 else { return base }
-            let scaled = Font(nsFont(style))
-            return weight.map(scaled.weight) ?? scaled
+        @MainActor
+        func font(_ fallback: Font, _ style: NSFont.TextStyle, weight: NSFont.Weight? = nil) -> Font {
+            if scale == 1, fontFamily == InterfaceFont.system { return fallback }
+            let system = systemFont(style)
+            if fontFamily != InterfaceFont.system {
+                let reference = matchingFont(for: style, systemFont: system, explicitWeight: weight)
+                if let custom = InterfaceFont.resolve(fontFamily, matching: reference) { return Font(custom) }
+            }
+            guard scale != 1 else { return fallback }
+            return Font(weight.map { NSFont.systemFont(ofSize: system.pointSize, weight: $0) } ?? system)
         }
 
-        /// Its own descriptor, so `.headline` stays Bold and `.caption2` Medium, not lighter.
-        private func nsFont(_ style: NSFont.TextStyle) -> NSFont {
+        @MainActor
+        func font(_ fallback: Font, matching systemFont: NSFont) -> Font {
+            InterfaceFont.resolve(fontFamily, matching: systemFont).map(Font.init) ?? fallback
+        }
+
+        private func matchingFont(
+            for style: NSFont.TextStyle, systemFont: NSFont, explicitWeight: NSFont.Weight?
+        ) -> NSFont {
+            let weight = explicitWeight ?? (style == .caption2 ? .medium : nil)
+            return weight.map { NSFont.systemFont(ofSize: systemFont.pointSize, weight: $0) } ?? systemFont
+        }
+
+        private func systemFont(_ style: NSFont.TextStyle) -> NSFont {
             let base = NSFont.preferredFont(forTextStyle: style)
             guard scale != 1 else { return base }
             return NSFont(descriptor: base.fontDescriptor, size: scaledPoints(base.pointSize, scale)) ?? base

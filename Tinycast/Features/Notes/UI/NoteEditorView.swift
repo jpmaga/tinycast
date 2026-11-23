@@ -4,10 +4,13 @@ import SwiftUI
 struct NoteEditorView: NSViewRepresentable {
     let input: NoteEditorInput
     let rendersMarkdown: Bool
+    var metrics: InterfaceMetrics = .standard
     let onSourceChange: (String) -> Void
     let onCharacterCountChange: (NoteEditorInput, Int) -> Void
     let onFormattingChange: (NoteEditorInput, NoteFormatting) -> Void
     let onReady: (NoteTextView) -> Void
+
+    @Environment(\.themePresentation) private var themePresentation
 
     func makeCoordinator() -> Coordinator {
         Coordinator(parent: self)
@@ -24,7 +27,7 @@ struct NoteEditorView: NSViewRepresentable {
         scrollView.automaticallyAdjustsContentInsets = false
 
         let textView = NoteTextView(usingTextLayoutManager: true)
-        Self.configure(textView)
+        Self.configure(textView, styler: context.coordinator.renderer.styler)
         textView.delegate = context.coordinator
         textView.editorUndoManager = context.coordinator.editorUndoManager
         scrollView.documentView = textView
@@ -37,7 +40,8 @@ struct NoteEditorView: NSViewRepresentable {
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
         context.coordinator.parent = self
         context.coordinator.update(input)
-        context.coordinator.setRendersMarkdown(rendersMarkdown)
+        context.coordinator.updateAppearance(rendersMarkdown: rendersMarkdown, metrics: metrics)
+        context.coordinator.applyTheme(themePresentation)
     }
 
     @MainActor
@@ -53,6 +57,8 @@ struct NoteEditorView: NSViewRepresentable {
 
         private var input: NoteEditorInput
         private var isInstalling = false
+        private var metrics: InterfaceMetrics
+        private var themePresentation = ThemePresentation()
         private var undoObservers: [NotificationCenter.ObservationToken] = []
         /// Held here because the layout manager keeps its delegate weakly.
         private let fragmentProvider = NoteLayoutFragmentProvider()
@@ -60,7 +66,8 @@ struct NoteEditorView: NSViewRepresentable {
         init(parent: NoteEditorView) {
             self.parent = parent
             input = parent.input
-            renderer = NoteMarkdownRenderer(isEnabled: parent.rendersMarkdown)
+            metrics = parent.metrics
+            renderer = NoteMarkdownRenderer(isEnabled: parent.rendersMarkdown, metrics: metrics)
             super.init()
             let center = NotificationCenter.default
             undoObservers = [
@@ -111,8 +118,12 @@ struct NoteEditorView: NSViewRepresentable {
             install(next, resetUndo: true)
         }
 
-        func setRendersMarkdown(_ rendersMarkdown: Bool) {
-            guard rendersMarkdown != renderer.isEnabled else { return }
+        func updateAppearance(rendersMarkdown: Bool, metrics: InterfaceMetrics) {
+            guard rendersMarkdown != renderer.isEnabled || metrics != self.metrics else { return }
+            if metrics != self.metrics {
+                self.metrics = metrics
+                renderer.styler = NoteMarkdownStyler(metrics: metrics)
+            }
             renderer.isEnabled = rendersMarkdown
             renderer.reset()
             reportFormatting()
@@ -151,7 +162,7 @@ struct NoteEditorView: NSViewRepresentable {
             _ textView: NSTextView, shouldChangeTypingAttributes oldTypingAttributes: [String: Any],
             toAttributes newTypingAttributes: [NSAttributedString.Key: Any]
         ) -> [NSAttributedString.Key: Any] {
-            renderer.isEnabled ? NoteMarkdownStyler.literal : newTypingAttributes
+            renderer.isEnabled ? renderer.styler.literal : newTypingAttributes
         }
 
         func textView(_ textView: NSTextView, clickedOnLink link: Any, at charIndex: Int) -> Bool {
@@ -180,6 +191,13 @@ struct NoteEditorView: NSViewRepresentable {
             renderer.selectionDidChange()
         }
 
+        func applyTheme(_ next: ThemePresentation) {
+            guard themePresentation.dark != next.dark || themePresentation.light != next.light else { return }
+            themePresentation = next
+            renderer.reset()
+            textView?.needsDisplay = true
+        }
+
         func appearanceChanged() {
             renderer.reset()
         }
@@ -205,7 +223,7 @@ struct NoteEditorView: NSViewRepresentable {
         }
     }
 
-    static func configure(_ textView: NSTextView) {
+    static func configure(_ textView: NSTextView, styler: NoteMarkdownStyler = NoteMarkdownStyler(metrics: .standard)) {
         textView.isRichText = false
         textView.importsGraphics = false
         textView.drawsBackground = false
@@ -221,12 +239,12 @@ struct NoteEditorView: NSViewRepresentable {
             height: Theme.Size.noteEditorTopInset)
         textView.textContainer?.widthTracksTextView = true
         textView.textContainer?.lineFragmentPadding = 0
-        textView.font = NoteMarkdownTypography.body
-        textView.textColor = NSColor(Theme.Colors.noteText)
-        textView.insertionPointColor = NSColor(Theme.Colors.noteText)
+        textView.font = styler.typography.body
+        textView.textColor = NoteMarkdownStyler.noteInk
+        textView.insertionPointColor = NoteMarkdownStyler.noteInk
         textView.selectedTextAttributes = [
-            .backgroundColor: NSColor(Theme.Colors.selection),
-            .foregroundColor: NSColor(Theme.Colors.noteText)
+            .backgroundColor: ThemeRendering.appKitColor(Theme.Colors.selection),
+            .foregroundColor: NoteMarkdownStyler.noteInk
         ]
         textView.isAutomaticQuoteSubstitutionEnabled = false
         textView.isAutomaticDashSubstitutionEnabled = false
@@ -238,7 +256,9 @@ struct NoteEditorView: NSViewRepresentable {
         // Its affordance is a child window that drags a closed note back on screen.
         textView.writingToolsBehavior = .none
         textView.allowsUndo = true
-        textView.linkTextAttributes = [.foregroundColor: NSColor.linkColor, .cursor: NSCursor.pointingHand]
-        textView.typingAttributes = NoteMarkdownStyler.literal
+        textView.linkTextAttributes = [
+            .foregroundColor: ThemeRendering.appKitColor(Theme.Colors.linkInk), .cursor: NSCursor.pointingHand
+        ]
+        textView.typingAttributes = styler.literal
     }
 }

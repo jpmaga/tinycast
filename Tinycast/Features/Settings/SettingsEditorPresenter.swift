@@ -391,6 +391,7 @@ extension View {
             .environment(core.mainApp)
             .environment(core.mainApp?.extensions)
             .environment(core.settings)
+            .environment(core.themes)
             .environment(core.dictationCoordinator)
             .environment(core.appIndex)
             .environment(core.hotKeys)

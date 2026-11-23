@@ -22,9 +22,15 @@ extension SettingsBackup {
             popToRootSeconds: s.popToRootTimeout.rawValue,
             escapeKeyBehavior: s.escapeKeyBehavior.rawValue,
             appearance: s.appearance.rawValue,
+            darkTheme: s.darkTheme,
+            lightTheme: s.lightTheme,
+            windowOpacity: s.windowOpacity,
+            windowBlur: s.windowBlur,
             language: s.language.rawValue,
             calcNumberStyle: s.calcNumberStyle.rawValue,
             interfaceSize: s.interfaceSize.rawValue,
+            interfaceFont: s.interfaceFont,
+            interfaceCornerRadius: s.interfaceCornerRadius.rawValue,
             compactMode: s.compactMode,
             compactBarCommands: s.compactBarCommands.map(\.rawValue),
             searchScopes: s.searchScopes,
@@ -245,6 +251,33 @@ extension SettingsBackup {
         }
         if let raw = s.interfaceSize, let size = InterfaceSize(rawValue: raw) {
             settings.interfaceSize = size
+            count += 1
+        }
+        if let family = s.interfaceFont {
+            settings.interfaceFont = family
+            count += 1
+        }
+        if let raw = s.interfaceCornerRadius, let radius = InterfaceCornerRadius(rawValue: raw) {
+            settings.interfaceCornerRadius = radius
+            count += 1
+        }
+        if let darkTheme = s.darkTheme {
+            settings.darkTheme = darkTheme
+            count += 1
+        }
+        if let lightTheme = s.lightTheme {
+            settings.lightTheme = lightTheme
+            count += 1
+        }
+        if let blur = s.windowBlur {
+            settings.windowBlur = blur
+            count += 1
+        }
+        if let opacity = s.windowOpacity, (0...1).contains(opacity) {
+            settings.windowOpacity = opacity
+            count += 1
+        } else if s.windowOpacity == nil, s.windowBlur != nil {
+            settings.windowOpacity = nil
             count += 1
         }
         if let raw = s.appearance, let appearance = AppAppearance(rawValue: raw) {

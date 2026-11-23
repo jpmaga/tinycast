@@ -10,6 +10,7 @@ struct SettingsFileTests {
         testLayout()
         testValues()
         testFormat()
+        testInterfaceAppearance()
         testParseIssues()
         try await testRepository()
         try testCommit()
@@ -86,6 +87,11 @@ struct SettingsFileTests {
         check("a whole number reads as an Int", Int(settingsJSON: 30) == 30)
         check("a fraction is not an Int", Int(settingsJSON: .number(1.5)) == nil)
         check("a quoted number is not an Int", Int(settingsJSON: "30") == nil)
+        check("window opacity reads as a fraction", Double?(settingsJSON: .number(0.62)) == .some(0.62))
+        check("window opacity reads null as theme default", Double?(settingsJSON: .null) == .some(nil))
+        check("window opacity rejects quoted values", Double?(settingsJSON: "0.62") == nil)
+        check("window opacity rejects non-finite numbers", Double?(settingsJSON: .number(.infinity)) == nil)
+        check("window opacity writes a fraction", 0.62.settingsJSON == .number(0.62))
         check("a string reads", String(settingsJSON: "é/x") == "é/x")
         check(
             "a list reads whole",
@@ -106,6 +112,36 @@ struct SettingsFileTests {
         check("a token enum writes its word", Keep.forever.settingsJSON == "forever")
     }
 
+    private final class AppearanceFixture {
+        var font = InterfaceFont.system
+        var cornerRadius = InterfaceCornerRadius.default
+    }
+
+    private static func testInterfaceAppearance() {
+        let fixture = AppearanceFixture()
+        let font = SettingsFileBinding(.interfaceFont, fixture, \.font) {
+            InterfaceFont.isAvailable($0) ? $0 : nil
+        }
+        let corners = SettingsFileBinding(.interfaceCornerRadius, fixture, \.cornerRadius)
+
+        check("the system font default is written as a token", font.read() == "system")
+        check("an installed font family is accepted", font.write("Avenir Next").isEmpty)
+        check("Font rejects a missing family", font.write("Tinycast Missing Font") == [.invalidValue(.interfaceFont)])
+        check("Font rejects a non-string value", font.write(5) == [.invalidValue(.interfaceFont)])
+        check("an invalid font keeps the current family", font.read() == "Avenir Next")
+
+        check("the default corner step is written as a token", corners.read() == "default")
+        for token in ["square", "subtle", "default", "round"] {
+            let json = SettingsFileJSON.string(token)
+            check("Corner roundness accepts \(token)", corners.write(json).isEmpty && corners.read() == json)
+        }
+        check("Corner roundness rejects an unknown step", corners.write("extra") == [.invalidValue(.interfaceCornerRadius)])
+        check("an invalid step keeps the current corner choice", corners.read() == "round")
+        let values = [font.key: font.read(), corners.key: corners.read()]
+        let document = SettingsFileFormat.render(values)
+        check("the new settings round-trip under appearance", (try? SettingsFileFormat.parse(document).values) == values)
+    }
+
     // MARK: - Text
 
     private static func testFormat() {
@@ -118,7 +154,11 @@ struct SettingsFileTests {
             .escapeKeyBehavior: "say \"hi\"\\ / é\n\t\u{01}",
             .fileSearchIgnorePatterns: .array([]),
             .popToRootTimeout: 5,
-            .windowGap: .number(-1.5)
+            .windowGap: .number(-1.5),
+            .darkTheme: "nord",
+            .lightTheme: "rose-pine-dawn",
+            .windowOpacity: .null,
+            .windowBlur: false
         ]
         let golden = """
             {
@@ -128,6 +168,12 @@ struct SettingsFileTests {
                 "popToRootSeconds": 5,
                 "escapeKeyBehavior": "say \\"hi\\"\\\\ / é\\n\\t\\u0001",
                 "autoSwitchInputSource": null
+              },
+              "appearance": {
+                "darkTheme": "nord",
+                "lightTheme": "rose-pine-dawn",
+                "windowOpacity": null,
+                "windowBlur": false
               },
               "applications": {
                 "searchScopes": [

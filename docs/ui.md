@@ -17,14 +17,14 @@ overlays**; there are no hard-edged bars, strips, or dividers. Rows don't clip u
 **dissolve**: a scroll-driven gradient mask ghosts them as they pass beneath. Floating controls (the
 action pill, the menu circle, popover menus) are **Liquid Glass**.
 
-That paragraph describes **Dark**, which is the design. Light is the same design with the ink
-inverted: a white scrim over the same blur, and a black-alpha ramp at matched stops. Nothing about
-geometry, type, motion or state changes between them.
+That paragraph describes **Tinycast Dark**. **Tinycast Light** keeps the layout and motion with a
+white scrim and a black-alpha ramp. Custom themes supply their own background, ink and semantic
+colours. The opacity and blur settings control the window background in either appearance.
 
 Five load-bearing ideas, in priority order:
 
-1. **Surface = scrim over behind-window blur.** No solid backgrounds. Depth comes from the desktop showing through.
-2. **One alpha ramp, never grays.** Ink at fixed stops: white over the dark surface, black over the light one.
+1. **Surface = scrim over behind-window blur.** No solid backgrounds. Depth comes from the desktop showing through. The blur preference can turn the blur off.
+2. **One alpha ramp, never grays.** Ink at fixed stops: white over the dark surface, black over the light one. Custom palettes supply their own ink at the same stops.
 3. **Floating bars, not chrome.** Header/footer are transparent overlays; the list fills the whole panel.
 4. **Edges dissolve, they don't clip.** Scroll-driven mask, no separators between list and bars.
 5. **Glass only on floating controls.** The main surface is never glass; pills/menus/circles are.
@@ -35,13 +35,18 @@ Five load-bearing ideas, in priority order:
 
 These are the things that quietly break the look if changed. Preserve them unless the task is explicitly to change them.
 
-- **Dark is the baseline and its values are frozen.** Every `Theme.Colors` token resolves per appearance, and its **dark branch is the literal the forced-dark build shipped**, restated, never recomputed. Retune a light branch freely; touch a dark one only when the task is to change Dark. `AppCore.applyAppearance()` is the only place an appearance is assigned, from `AppSettings.appearance`; `.system` assigns `nil` so AppKit follows macOS.
-- **New colors go through `Theme.Colors.ramp(dark:light:)`** (an alpha that inverts) or `adaptive(dark:light:)` (two explicit `NSColor`s, for anything that isn't a plain inversion: `panelScrim`, `layoutPreviewGround`). Never a bare `Color.white.opacity(…)` in a view: it disappears in Light.
+- **Tinycast Dark and Tinycast Light are frozen baselines.** Both resolve to the shipped literals.
+  `AppCore.applyAppearance()` is the only place an appearance is assigned, from
+  `AppSettings.appearance`. System assigns `nil` so AppKit follows macOS.
+- **New surface colours go through `Theme.Colors`.** Use `ramp(dark:light:)` for ink alpha stops or
+  `adaptive(dark:light:)` for explicit baseline pairs. Never a bare `Color.white.opacity(…)` in a
+  view: it disappears in Light. In a custom palette, the same resolution
+  path supplies derived colours and overrides. Use tokens in views to preserve contrast in each theme.
 - **No grays, no opaque fills on the surface.** Reach for `Theme.Colors.*` instead of `.gray`, `NSColor.windowBackground`, etc.
-- **Some colors stay fixed in both appearances, on purpose.** The `EdgeDissolve`/`OverflowFade` gradients are **mask luminance, not color**; inverting them breaks the dissolve everywhere. `IconTile` and the extension `SymbolTile` keep white ink on a saturated ground, which carries its own contrast; only the system icon style (see "Icon pack") changes how a tile paints. The selected compact shortcut glyph also stays white over its contrasting fill. And `IconCache` cannot use a dynamic `NSColor` at all: it rasterizes off-main, so the surface is carried explicitly and is part of the cache key.
+- **Some colors stay fixed in both appearances, on purpose.** The `EdgeDissolve`/`OverflowFade` gradients are **mask luminance, not color**; inverting them breaks the dissolve everywhere. `IconTile` and the extension `SymbolTile` keep white ink on a saturated ground, which carries its own contrast; only the system icon style (see "Icon pack") changes how a tile paints. The selected compact shortcut glyph uses contrasting ink over the accent in custom themes. And `IconCache` cannot use a dynamic `NSColor` at all: it rasterizes off-main, so the surface is carried explicitly and is part of the cache key.
 - **An icon is drawn for a surface _and_ a system icon style, and both move under you.** macOS restyles the icons `NSWorkspace` hands out when System Settings → Appearance → **Icon & widget style** changes, so `IconStyleMonitor` and Tinycast's own appearance both call `IconCache.invalidateStyled()`. **The monitor may not invalidate on the notification itself.** AppKit posts `NSWorkspaceIconAppearanceConfigurationDidChange` before IconServices has swapped what `NSWorkspace` vends (measured at 25–120ms behind, jittering run to run), and the images it hands back are live objects macOS restyles in place, so flattening one on the signal freezes the _outgoing_ style into a bitmap nothing ever invalidates again. `IconStyleMonitor` therefore polls `IconCache.styleFingerprint()` until the pixels actually move, and only then invalidates. Waiting also sidesteps the cost: re-flattening every icon the instant a restyle begins forces a cold IconServices regeneration, measured at 160× the settled draw cost. That drops the cached bitmaps, bumps every cache key so an in-flight decode cannot repopulate a stale one, moves `IconCache.style.generation`, and re-reads the style `IconTile` paints in, so a tile changes on the same frame as the app icons beside it. **Any view that draws an icon must key its fetch on that generation**: wrap the view's own key in `IconRequest`, or call `IconCache.observeStyle()` where the icon is resolved synchronously in a `body`. It is reached through `IconCache` rather than injected precisely because icons are drawn in menus, popovers and every list, where a missed injection would be a silent staleness bug.
 - **No hard dividers between the list and the bars.** The header and bottom bar are `safeAreaInset` overlays with no background; separation comes from `edgeDissolve()`, nothing else. (One deliberate exception: the vertical hairline between a list and its preview pane, as the clipboard and file search screens draw.)
-- **The root clip owns the expanded panel's corner and the window's shape.** `RootPaletteView.body` applies `.background(panelScrim)`, then a `.background` of `Color.clear.glassEffect(.regular, in: Rectangle())` (`.identity` while compact, so the tree never changes), then ends with `.clipShape(RoundedRectangle(26, .continuous))`. Keep the glass square: glass in a rounded shape feathers its own edge, and under a clip of the same curve the corner anti-aliases twice and reads soft (an alpha ramp of 3–8 px at the curve against 2–4 px). Keep the glass _behind_ the scrim rather than wrapping it: given the scrim as its content, the glass keeps its rim brighter above it (107 against 84 on a dark desktop), while a scrim over the glass dims the rim with everything else. The clip is last. AppKit owns only the window; the glass and everything in it are SwiftUI. The clip is what lets macOS read the panel's outline for the system shadow. **Never remove that clip, and never make bare glass the window's content:** with only glass in a borderless window, macOS cannot read a shape and shadows the default window outline instead (rounded top, square bottom), which shows as a pale rectangle and a broken hairline over a light desktop. The shadow and its hairline are the system's, and so is the glass rim, which Liquid Glass lights on the top and bottom edges and fades around the corners; Tinycast draws none of them. Compact uses zero root corner radius and a four-point drawing outset so its native glass shapes own their contours without touching the window boundary.
+- **The root clip owns the expanded panel's corner and the window's shape.** `RootPaletteView.body` applies `.background(panelScrim)`, then a `.background` of square glass (`.identity` while compact or when blur is off, so the tree never changes), then ends with `.clipShape(RoundedRectangle(26, .continuous))`. Keep the glass square: glass in a rounded shape feathers its own edge, and under a clip of the same curve the corner anti-aliases twice and reads soft (an alpha ramp of 3–8 px at the curve against 2–4 px). Keep the glass _behind_ the scrim rather than wrapping it: given the scrim as its content, the glass keeps its rim brighter above it (107 against 84 on a dark desktop), while a scrim over the glass dims the rim with everything else. The clip is last. AppKit owns only the window; the glass and everything in it are SwiftUI. The clip is what lets macOS read the panel's outline for the system shadow. **Never remove that clip, and never make bare glass the window's content:** with only glass in a borderless window, macOS cannot read a shape and shadows the default window outline instead (rounded top, square bottom), which shows as a pale rectangle and a broken hairline over a light desktop. The shadow and its hairline are the system's, and so is the glass rim, which Liquid Glass lights on the top and bottom edges and fades around the corners; Tinycast draws none of them. Compact uses zero root corner radius and a four-point drawing outset so its native glass shapes own their contours without touching the window boundary.
 - **Don't use the native scroll edge effect.** Inside a transparent panel it renders a hard-bounded rectangle. Use `edgeDissolve()`, or a gradient `mask` where a surface owns its own fade; `scrollEdgeEffectStyle` draws a _material_ where a scroll view meets a safe area, so over a surface that already has `panelScrim` and glass it composites to nothing. Tried and rejected on `QuickActionResultView`, with and without `safeAreaBar`. This is a rule about the borderless panels; the Settings window is a titled `NSWindow` whose system titlebar draws the band itself (see "Settings").
 - **Test over a light desktop.** Transparency and corner masking bugs only show over bright wallpaper. Dark wallpaper hides them.
 - **No `NSAlert` or system popovers.** Every confirmation, failure report, value prompt and transient readout is Tinycast's own SwiftUI surface (see "Dialogs & HUD"). The Settings window is the one exception (see "Settings"). An Aqua alert on an alpha-over-vibrancy app reads as a different product, and its `runModal` run loop keeps Carbon hotkeys firing underneath.
@@ -75,15 +80,15 @@ Add a token rather than a magic number when introducing a new value.
 
 ### Interface Size (`InterfaceMetrics`)
 
-`AppSettings.interfaceSize` scales the palette and the surfaces that float with it: the ⌘K menu, the
-extension list panel, Quick Actions, dialogs and HUDs. Settings, Onboarding,
-Support, About and Notes never scale.
+Interface Size scales the palette and its floating surfaces, including the ⌘K menu, extension
+panels, Quick Actions, dialogs and HUDs. Font and Corner roundness also reach Notes at its own fixed
+reading size. Settings, Onboarding, Support, About and the standalone AI Chat window use their
+existing metrics.
 
-`DesignSystem/InterfaceMetrics.swift` stores **only a scale** and derives every value from the `Theme`
-literal, so `Theme` stays the one place a number is written down. **In any view a scaled surface can
-reach, read `@Environment(\.metrics)` rather than `Theme.Spacing/Radius/Size/Typography`**; the key
-defaults to `.standard`, so a shared `DesignSystem/` component renders unscaled in Settings without
-being forked. An AppKit site reads `settings.interfaceSize.metrics` where it computes its frame.
+`InterfaceMetrics` derives dimensions and typography from `Theme`, the source of base tokens.
+Views read `@Environment(\.metrics)` so shared components use the metrics of their host. The
+environment defaults to `.standard`, which preserves the `Theme` values and system fonts. AppKit
+reads `settings.interfaceMetrics` where it measures a palette surface.
 
 A length measured against the **screen** does not scale; a length measured against **our own content**
 does. So `hairline`, `paletteTopMarginFraction`, `paletteSnapDistance`, `paletteMinimumVisible`, the
@@ -132,6 +137,13 @@ buttons land exactly `Spacing.xs` inside the wrapper without either radius being
 
 Notes has no corner of its own: it clips to `panel`, so the two floating surfaces read as siblings.
 
+General → Appearance → **Corner roundness** sets Square (0), Subtle (0.5), Default (1) or
+Round (1.3). Named radii multiply Interface Size and corner roundness together before rounding to
+whole points. Notes uses its fixed interface scale. Floating controls keep their capsule or circle
+silhouette at Subtle, Default and Round. Square gives both layers of the footer action group square
+corners and squares off the menu circle, its attached menu corner, and the other floating capsules.
+Icon glyphs and extension-authored image masks keep their own shapes.
+
 `dialog` sits between `menuPanel` and `panel` so a dialog reads as a smaller sibling of the palette, not a second palette.
 
 `menu` is the shared small-control corner (About link pills); `menuRow` is the slightly rounder hover highlight behind popover-menu rows.
@@ -144,11 +156,16 @@ Always `RoundedRectangle(cornerRadius:, style: .continuous)`: continuous corners
 minus the gap between them.** Miss it and the curves stop being parallel: the inner corner reads
 tight or slack against the one behind it, which is visible long before anyone can name it.
 
-Inside a menu the rule holds exactly, and `menuRow` exists to keep it holding:
+At Default the Notes heading menu and extension pickers use the original concentric radii:
 
 | Outer          | Gap            | Inner        |
 | -------------- | -------------- | ------------ |
 | `menuPanel 16` | `Spacing.sm 6` | `menuRow 10` |
+
+At other corner steps, the inner radius is derived from the scaled menu radius and the actual
+scaled list inset, clamped at zero. The Notes heading menu and extension pickers use `Spacing.sm`.
+The ⌘K and extension Actions lists use `Spacing.md` and keep their shipped `menuRow` corner at
+Default. The attached corner still follows the trigger's radius.
 
 **Alignment to a control outranks it.** Every palette menu hangs off a button, and its edge lines up
 with that button's: `MenuPanel.inset` is `Spacing.md`, which is `bottomBar`'s own horizontal padding,
@@ -217,10 +234,16 @@ hand-written weight table: on macOS `.headline` is Bold and `.caption2` is Mediu
 _lightens_ them the moment the user leaves the default size. `menuSymbol` is the deliberate exception:
 it is an explicitly-sized glyph treatment, not a system text style, so scaling preserves Medium.
 
+A named font family is matched at the same scaled point size and the style's weight, including explicit
+overrides. AppKit supplies the matching face for both SwiftUI rendering and native text measurement.
+A missing family or weight uses the corresponding system face. Code and other monospaced text
+keep their system monospaced faces.
+
 ### Colors (`Theme.Colors`): the alpha ramp
 
-The **Dark column is the design and is frozen**; each value is the literal the forced-dark build
-shipped. Light is the same stop with the ink inverted, and is the only column open to retuning.
+The Dark and Light columns pin the shipped literals for the two default themes. Custom themes
+reuse the alpha stops with their own foreground ink and derive specialised colours from shared
+semantic keys. See [colour themes](features/themes.md) for the derivation rules.
 
 | Token             | Dark           | Light          | Use                                               |
 | ----------------- | -------------- | -------------- | ------------------------------------------------- |
@@ -243,18 +266,21 @@ shipped. Light is the same stop with the ink inverted, and is the only column op
 | `dropGuide`       | white 0.35     | black 0.35     | the palette's drop guides while dragging          |
 | `composerSend`    | white 0.92     | black 0.92     | AI Chat's Send disc                               |
 
-`panelScrim` is the ramp's inverse (it darkens the dark surface and lightens the light one), so it
-is an `adaptive` pair, not a `ramp`. So is `composerSendInk`, black 0.85 on the dark disc and white
-on the light one.
-`brand`, `primaryAction`, `destructive`, `success` and `dropGuideArmed` are fixed hues and adapt on
-their own.
-`Theme.Colors.Syntax` holds the code-colouring palette AI Chat paints into a fenced block: `keyword`,
-`string`, `number`, `comment`, `type`, `function`, `constant`, `attribute`, `property`, `inserted`
-and `deleted`. Each is an `adaptive` pair, a bright hue on the dark surface and a deeper one on the
-light, and it is the only place a syntax colour is chosen.
+`panelScrim` takes the theme background and the separate opacity override when set. The baseline
+uses the original adaptive black and white pair. Actions, progress, highlights and
+`Theme.Colors.Syntax` use palette accents and semantic slots when available. Brand, masks,
+checkerboards and the layout preview plates keep their own colours.
+
+`controlAccent` paints focused borders and checked controls, and `accentInk` paints over the
+accent. `caretInk` preserves the inline extension field's white default caret.
+`tooltipSurface`, `dragPreviewSurface`, `dragPreviewInk` and `linkInk` preserve their AppKit
+defaults. AppKit callers on themed surfaces bridge tokens with `ThemeRendering.appKitColor(token)`,
+never `NSColor(token)`, which cannot see the active theme.
 
 Beyond these, `.secondary`/`.tertiary` foreground styles are fine for SF Symbols (they resolve against
-the environment's appearance). **Selection always beats hover** when a row is both.
+the environment's appearance). Menus and HUDs also use hierarchical foreground styles for native
+vibrancy on glass. These styles inherit the hosting root's ink for custom themes.
+**Selection always beats hover** when a row is both.
 
 An extension's own surfaces live in `ExtensionColors` (`Features/Extensions/UI/`), not here; the
 `ramp` mechanism is shared, the values are the feature's. See the Extensions non-negotiable in
@@ -308,15 +334,17 @@ remain click-only controls. Escape closes the switcher before hiding, while Comm
 control order the panel out. Show Notes only shows or focuses; focus loss leaves the panel visible.
 
 The editor is one native TextKit 2 surface. Its string is the canonical Markdown source, and Render
-Markdown styles it in place with no new tokens. Notes type sits one system text style above the rest
-of the app, because a note is for reading: body text is the title3 size in `noteText`, and headings 1
-to 3 use the largeTitle, title1 and title2 sizes (bold, bold, semibold). Interface Size does not scale
-it. Inline code is monospaced on `controlSurface`, and links use the system link colour. Quotes and
-checked tasks dim to `textSecondary`, and a checked task is struck through. Most markers show in
-`textTertiary` on the caret's line and are hidden elsewhere. Bullets keep their rendered dot even under
-the caret; revealed list markers stay `textSecondary`. Revealed non-bullet list and quote markers hang
+Markdown styles it in place. Notes type sits one system text style above the rest of the app, because
+a note is for reading: body text is the title3 size in `noteText`, and headings 1 to 3 use the
+largeTitle, title1 and title2 sizes (bold, bold, semibold). Interface Size does not scale it. Inline
+code is monospaced on `controlSurface`, and links use `linkInk`, which defaults to the system link
+colour. Quotes and checked tasks dim to `textSecondary`, and a checked task is struck through. Most
+markers show in `textTertiary` on the caret's line and are hidden elsewhere. Bullets keep their rendered
+dot even under the caret; revealed list markers stay `textSecondary`. Revealed non-bullet list and quote markers hang
 left of their text, so the text does not move when the caret arrives, unless the marker is wider than
 the slot. Empty list items keep body-sized invisible markers so their rows match filled items' height.
+
+The Font preference restyles the open editor in place at those sizes.
 
 A layout fragment draws the block chrome. A code band fills `cardFill` with `menu` corners at its ends
 and a `textTertiary` language label, inset by `lg`. A quote bar is `markdownQuoteBar` wide in `border`,

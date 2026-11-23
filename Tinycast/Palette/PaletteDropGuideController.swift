@@ -5,7 +5,7 @@ import SwiftUI
 @MainActor
 final class PaletteDropGuideController {
     private var panel: NSPanel?
-    private var host: NSHostingView<PaletteDropGuideView>?
+    private var host: NSHostingView<AnyView>?
     private var screenFrame: CGRect = .zero
     private var home: CGPoint = .zero
     private var dragged: CGPoint = .zero
@@ -89,7 +89,7 @@ final class PaletteDropGuideController {
 
     private func ensurePanel() -> NSPanel {
         if let panel { return panel }
-        let host = NSHostingView(rootView: guides)
+        let host = NSHostingView(rootView: AnyView(guides.themeScope()))
         // The controller owns the frame; without this the hosting view would size the window.
         host.sizingOptions = []
         let panel = PaletteDropGuidePanel()
@@ -100,7 +100,7 @@ final class PaletteDropGuideController {
     }
 
     private func render() {
-        host?.rootView = guides
+        host?.rootView = AnyView(guides.themeScope())
     }
 
     /// AppKit's y grows up from the screen's origin, SwiftUI's grows down from the window's top.

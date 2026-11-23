@@ -24,19 +24,30 @@ final class NoteBlockDecoration: NSObject, Sendable {
     /// Number text or language label; a checkmark is cut out of the box instead.
     let ink: NSColor
     let bodyPointSize: CGFloat
+    let bodyFontName: String?
+    let captionFontName: String?
+    let radius: InterfaceMetrics.Radius
 
-    init(shape: Shape, fill: NSColor, ink: NSColor, bodyPointSize: CGFloat) {
+    init(
+        shape: Shape, fill: NSColor, ink: NSColor, bodyPointSize: CGFloat,
+        bodyFontName: String? = nil, captionFontName: String? = nil,
+        radius: InterfaceMetrics.Radius = InterfaceMetrics.standard.radius
+    ) {
         self.shape = shape
         self.fill = fill
         self.ink = ink
         self.bodyPointSize = bodyPointSize
+        self.bodyFontName = bodyFontName
+        self.captionFontName = captionFontName
+        self.radius = radius
     }
 
     /// Value equality, so restyling a line to the same look does not read as a change.
     override func isEqual(_ object: Any?) -> Bool {
         guard let other = object as? NoteBlockDecoration else { return false }
         return shape == other.shape && fill == other.fill && ink == other.ink
-            && bodyPointSize == other.bodyPointSize
+            && bodyPointSize == other.bodyPointSize && bodyFontName == other.bodyFontName
+            && captionFontName == other.captionFontName && radius == other.radius
     }
 
     override var hash: Int {
@@ -45,6 +56,9 @@ final class NoteBlockDecoration: NSObject, Sendable {
         hasher.combine(fill)
         hasher.combine(ink)
         hasher.combine(bodyPointSize)
+        hasher.combine(bodyFontName)
+        hasher.combine(captionFontName)
+        hasher.combine(radius)
         return hasher.finalize()
     }
 }

@@ -189,7 +189,7 @@ private struct ExtensionTagListView: View {
                 .padding(.horizontal, metrics.spacing.xs)
                 .padding(.vertical, 2)
                 .background(
-                    RoundedRectangle(cornerRadius: 4, style: .continuous).fill(color.opacity(0.16))
+                    RoundedRectangle(cornerRadius: metrics.radius.scaled(4), style: .continuous).fill(color.opacity(0.16))
                 )
             }
         }
@@ -265,8 +265,12 @@ struct ExtensionMarkdownView: View {
             ForEach(Array(Self.parse(markdown).enumerated()), id: \.offset) { _, block in
                 switch block {
                 case .heading(let level, let text):
+                    let size = headingSize(level)
                     Text(inline(text))
-                        .font(.system(size: headingSize(level), weight: .semibold))
+                        .font(
+                            metrics.typography.font(
+                                .system(size: size, weight: .semibold),
+                                matching: .systemFont(ofSize: size, weight: .semibold)))
                         .padding(.top, metrics.spacing.xs)
                 case .paragraph(let text):
                     Text(inline(text))
@@ -292,7 +296,7 @@ struct ExtensionMarkdownView: View {
                 case .code(let text):
                     ScrollView(.horizontal) {
                         Text(text)
-                            .font(.system(.callout, design: .monospaced))
+                            .font(metrics.typography.code)
                             .textSelection(.enabled)
                             .padding(metrics.spacing.sm)
                     }
@@ -311,7 +315,10 @@ struct ExtensionMarkdownView: View {
                         ForEach(rows.indices, id: \.self) { r in
                             GridRow {
                                 ForEach(rows[r].indices, id: \.self) { c in
-                                    Text(inline(rows[r][c])).fontWeight(r == 0 ? .semibold : nil)
+                                    Text(inline(rows[r][c]))
+                                        .font(r == 0
+                                            ? metrics.typography.font(.body.weight(.semibold), .body, weight: .semibold)
+                                            : metrics.typography.rowTitle)
                                         .padding(.vertical, metrics.spacing.lg)
                                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                                         .background(r == 0 ? ExtensionColors.detailCardFill : .clear)

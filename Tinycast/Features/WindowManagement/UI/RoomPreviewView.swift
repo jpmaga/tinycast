@@ -9,6 +9,7 @@ struct RoomPreviewView: View {
     let size: CGSize
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.themePresentation) private var themePresentation
 
     private var bounds: CGRect { CGRect(origin: origin, size: size) }
 
@@ -26,7 +27,9 @@ struct RoomPreviewView: View {
             }
         }
         .frame(width: size.width, height: size.height, alignment: .topLeading)
-        .background(DeskBlur())
+        .background {
+            if themePresentation.windowBlur { DeskBlur() }
+        }
         .accessibilityHidden(true)
     }
 

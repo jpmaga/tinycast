@@ -49,7 +49,7 @@ struct MessageHUDView: View {
             mark
             Text(message)
                 .font(metrics.typography.bar)
-                .foregroundStyle(Color.primary)
+                .foregroundStyle(.primary)
                 .lineLimit(1)
         }
         .padding(.horizontal, metrics.spacing.xl)
@@ -59,13 +59,13 @@ struct MessageHUDView: View {
         .background { glow }
         .background(hovered ? Theme.Colors.controlHover : Theme.Colors.panelScrim)
         .background(GlassEffectView())
-        .clipShape(Capsule())
+        .clipShape(metrics.radius.capsule)
         .overlay { rim }
     }
 
     private var glow: some View {
         GeometryReader { proxy in
-            Capsule().fill(
+            metrics.radius.capsule.fill(
                 RadialGradient(
                     colors: [tint.opacity(Self.glowOpacity), tint.opacity(0.03), .clear],
                     center: UnitPoint(
@@ -75,15 +75,19 @@ struct MessageHUDView: View {
         }
     }
 
+    @ViewBuilder
     private var rim: some View {
-        Capsule().strokeBorder(
-            hovered
-                ? AnyShapeStyle(Theme.Colors.border)
-                : AnyShapeStyle(
-                    LinearGradient(
-                        colors: [tint.opacity(Self.rimOpacity), tint.opacity(0.06), .clear],
-                        startPoint: .leading, endPoint: .trailing)),
-            lineWidth: Theme.Size.hairline)
+        let style = hovered
+            ? AnyShapeStyle(Theme.Colors.border)
+            : AnyShapeStyle(
+                LinearGradient(
+                    colors: [tint.opacity(Self.rimOpacity), tint.opacity(0.06), .clear],
+                    startPoint: .leading, endPoint: .trailing))
+        if metrics.radius.hasSquareCorners {
+            Rectangle().strokeBorder(style, lineWidth: Theme.Size.hairline)
+        } else {
+            Capsule().strokeBorder(style, lineWidth: Theme.Size.hairline)
+        }
     }
 
     /// One box for both marks, so swapping a spinner for its outcome cannot resize the pill.

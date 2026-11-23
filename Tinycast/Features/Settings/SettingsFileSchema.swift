@@ -39,9 +39,20 @@ enum SettingsFileSchema {
         case .supportReminders: return bind(settings, \.supportRemindersEnabled)
         case .language: return bind(settings, \.language)
         case .appearance: return bind(settings, \.appearance)
+        case .darkTheme: return bind(settings, \.darkTheme)
+        case .lightTheme: return bind(settings, \.lightTheme)
+        case .windowOpacity:
+            return bind(settings, \.windowOpacity) { opacity in
+                guard let opacity else { return .some(nil) }
+                return (0...1).contains(opacity) ? .some(opacity) : nil
+            }
+        case .windowBlur: return bind(settings, \.windowBlur)
         case .animationsEnabled: return bind(settings, \.animationsEnabled)
         case .iconStyle: return bind(settings, \.iconStyle)
         case .interfaceSize: return bind(settings, \.interfaceSize)
+        case .interfaceFont:
+            return bind(settings, \.interfaceFont) { InterfaceFont.isAvailable($0) ? $0 : nil }
+        case .interfaceCornerRadius: return bind(settings, \.interfaceCornerRadius)
         case .compactMode: return bind(settings, \.compactMode)
         case .compactBarCommands:
             return bind(settings, \.compactBarCommands) {

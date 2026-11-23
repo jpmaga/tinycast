@@ -52,7 +52,7 @@ struct MeetingDetailsView: View {
             .foregroundStyle(.secondary)
             VStack(alignment: .leading, spacing: metrics.spacing.xs) {
                 Text(meeting.title)
-                    .font(metrics.typography.calcResult.weight(.semibold))
+                    .font(metrics.typography.font(Theme.Typography.calcResult.weight(.semibold), .title1, weight: .semibold))
                 HStack(spacing: metrics.spacing.sm) {
                     if let tint = meeting.calendarColor { ColorDot(color: tint.color) }
                     Text(subtitle)

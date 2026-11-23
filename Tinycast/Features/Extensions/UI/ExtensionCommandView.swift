@@ -77,7 +77,7 @@ struct ExtensionFailureView: View {
             VStack(alignment: .leading, spacing: metrics.spacing.md) {
                 HStack(spacing: metrics.spacing.sm) {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Theme.Colors.warning)
                     Text(headline)
                         .font(metrics.typography.rowTitle)
                         .textSelection(.enabled)
@@ -154,15 +154,9 @@ struct ExtensionToastPill: View {
         }
         .frame(height: metrics.size.menuButton)
         .background { glow }
-        .overlay {
-            Capsule().strokeBorder(
-                LinearGradient(
-                    colors: [tint.opacity(Self.rimOpacity), tint.opacity(0.06), .clear],
-                    startPoint: .leading, endPoint: .trailing),
-                lineWidth: Theme.Size.hairline)
-        }
-        .frosted(in: Capsule())
-        .contentShape(Capsule())
+        .overlay { rim }
+        .frosted(in: metrics.radius.capsule)
+        .contentShape(metrics.radius.capsule)
         .onTapGesture(perform: onDismiss)
         .onHover { isHovered in
             withAnimation(.easeOut(duration: Theme.Duration.hover)) { hovered = isHovered }
@@ -172,6 +166,18 @@ struct ExtensionToastPill: View {
             guard copiedAt != nil else { return }
             try? await Task.sleep(for: .seconds(Theme.Duration.copyFeedback))
             copiedAt = nil
+        }
+    }
+
+    @ViewBuilder
+    private var rim: some View {
+        let style = LinearGradient(
+            colors: [tint.opacity(Self.rimOpacity), tint.opacity(0.06), .clear],
+            startPoint: .leading, endPoint: .trailing)
+        if metrics.radius.hasSquareCorners {
+            Rectangle().strokeBorder(style, lineWidth: Theme.Size.hairline)
+        } else {
+            Capsule().strokeBorder(style, lineWidth: Theme.Size.hairline)
         }
     }
 
@@ -187,13 +193,13 @@ struct ExtensionToastPill: View {
         Button(action: action, label: label)
             .fixedSize()
             .buttonStyle(.plain)
-            .fontWeight(.semibold)
+            .font(metrics.typography.font(Theme.Typography.bar.weight(.semibold), .callout, weight: .semibold))
             .foregroundStyle(Theme.Colors.textPrimary)
     }
 
     private var glow: some View {
         GeometryReader { proxy in
-            Capsule().fill(
+            metrics.radius.capsule.fill(
                 RadialGradient(
                     colors: [tint.opacity(Self.glowOpacity), tint.opacity(0.03), .clear],
                     center: UnitPoint(x: metrics.size.menuButton / 2 / proxy.size.width, y: 0.5),

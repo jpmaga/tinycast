@@ -2,7 +2,9 @@ import SwiftUI
 
 /// The one control surface a form draws, kept here rather than in `DesignSystem`.
 struct ExtensionFieldChrome: ViewModifier {
-    private var form: ExtensionFormMetrics { ExtensionFormMetrics(scale: metrics.scale) }
+    private var form: ExtensionFormMetrics {
+        ExtensionFormMetrics(scale: metrics.scale, cornerMultiplier: metrics.cornerMultiplier)
+    }
     @Environment(\.metrics) private var metrics
     var focused: Bool
     /// A control that opens a popover keeps its focused edge while the popover has the keyboard.
