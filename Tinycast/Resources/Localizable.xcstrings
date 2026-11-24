@@ -110632,54 +110632,54 @@
         }
       }
     },
-    "Search for apps and commands…" : {
+    "Search for anything…" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nach Apps und Befehlen suchen …"
+            "value" : "Nach allem suchen …"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Buscar apps y comandos…"
+            "value" : "Buscar cualquier cosa…"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rechercher des apps et des commandes…"
+            "value" : "Rechercher n’importe quoi…"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Appとコマンドを検索…"
+            "value" : "何でも検索…"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "앱 및 명령 검색…"
+            "value" : "무엇이든 검색…"
           }
         },
         "pt" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Buscar apps e comandos…"
+            "value" : "Buscar qualquer coisa…"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Поиск приложений и команд…"
+            "value" : "Искать что угодно…"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "搜索 App 和命令…"
+            "value" : "搜索任何内容…"
           }
         }
       }

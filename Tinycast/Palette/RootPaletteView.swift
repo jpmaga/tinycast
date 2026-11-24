@@ -795,18 +795,12 @@ struct RootPaletteView: View {
             // Matches the list rows and section headers' own indent below.
             headerGutter(width: metrics.spacing.md * 2)
             // Every sub-screen leaves the same way, so the slot reads the same on all of them.
-            if vm.mode != .launcher {
+            // The launcher shows its prompt alone, so the query starts where the row icons do.
+            if showsBackButton {
                 HeaderBackButton(help: backHelp, action: goBack)
-            } else {
-                Image(systemName: vm.mode.systemImage)
-                    .font(metrics.typography.headerIcon)
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(.secondary)
-                    .frame(width: metrics.size.headerIconSlot)
-                    .windowDraggable(settings.paletteDraggable, onBegan: beginDrag, onEnded: endDrag)
+                // slot + xl equals a row's icon + lg, so the query starts where the row titles do.
+                headerGutter(width: metrics.spacing.xl)
             }
-            // slot + xl equals a row's icon + lg, so the query starts where the row titles do.
-            headerGutter(width: metrics.spacing.xl)
             // One structural position: a field inside a branch loses first responder when it flips.
             headerField
                 .simultaneousGesture(TapGesture().onEnded { resetCompactSelection() })
@@ -921,6 +915,8 @@ struct RootPaletteView: View {
 
     private var hidesSearchField: Bool { !isCollapsed && screen.hidesSearchField }
 
+    private var showsBackButton: Bool { vm.mode != .launcher }
+
     /// The field, kept mounted and hidden rather than swapped: a branch would tear its editor down.
     private var headerField: some View {
         searchField
@@ -950,7 +946,8 @@ struct RootPaletteView: View {
         let font = metrics.typography.searchFieldNSFont
         let text = vm.query.isEmpty ? searchPrompt : vm.query
         let typed = (text as NSString).size(withAttributes: [.font: font]).width
-        let chrome = metrics.size.headerIconSlot + metrics.spacing.md * 3 + metrics.spacing.xl
+        let backButton = showsBackButton ? metrics.size.headerIconSlot + metrics.spacing.xl : 0
+        let chrome = backButton + metrics.spacing.md * 3
         let room = metrics.size.panelWidth - accessory.width - chrome
         // +3pt so the caret sits after the last glyph rather than on top of it.
         return min(

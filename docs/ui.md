@@ -105,8 +105,9 @@ this, member by member, including that `.standard` is `Theme` verbatim.
 
 `xxs` is the tight gap between adjacent keycap chips (used everywhere keycaps sit side by side).
 
-Row content insets are `md`; list horizontal inset is `md`; the search icon aligns with rows via
-`md * 2`; the `xl` gap after it starts the query on the row titles' column.
+Row content insets are `md`; list horizontal inset is `md`; the launcher's query and a sub-screen's
+back chevron align with rows via `md * 2`; the `xl` gap after the chevron starts a sub-screen's query
+on the row titles' column.
 
 Section-header rhythm has two dedicated tokens: `sectionHeaderBottom` (header → first row) and
 `sectionSpacing` (gap above every header **except the list's first**, which reads as the previous
@@ -224,7 +225,7 @@ segment's label once a segmented control has settled.
 ### Typography (`Theme.Typography`)
 
 System text styles only: **no fixed point sizes in views**. Two named exceptions are explicit:
-`searchField` (20pt Regular) and the optical SF Symbol treatment `menuSymbol` (14pt Medium). Use
+`searchField` (16pt Regular) and the optical SF Symbol treatment `menuSymbol` (14pt Medium). Use
 `rowTitle` (`.body`), `sectionHeader` (`.subheadline.medium`),
 `rowTrailing`/`bar`/`menuRow`/`keyCap` etc. as named.
 
@@ -292,9 +293,9 @@ An extension's own surfaces live in `ExtensionColors` (`Features/Extensions/UI/`
 
 Source: `Palette/PalettePanel.swift`, `Palette/RootPaletteView.swift`.
 
-- **`PalettePanel`** is a borderless `NSPanel`: `isOpaque = false`, `backgroundColor = .clear`, `.palette` level (one above `.modalPanel`, so other apps' open panels never cover it), `hasShadow`, and an `AnimatedPanel`, so it opens with `.documentWindow`. It hosts SwiftUI via `NSHostingView`. `PaletteWindowController` centers it slightly above screen center (`+8%`) and dismisses it on `windowDidResignKey`.
+- **`PalettePanel`** is a borderless `NSPanel`: `isOpaque = false`, `backgroundColor = .clear`, `.palette` level (one above `.modalPanel`, so other apps' open panels never cover it), `hasShadow`, and an `AnimatedPanel`, so it opens with `.documentWindow`. It hosts SwiftUI via `NSHostingView`. `PaletteWindowController` centres it horizontally with its top edge a quarter of the way down the screen (`paletteTopMarginFraction`), growing downward, and dismisses it on `windowDidResignKey`.
 - **The results layer fills the whole panel.** The header and bottom bar attach via `.safeAreaInset(edge: .top/.bottom)` as transparent overlays that float _over_ the list. The list underlaps them and dissolves at the edges.
-- **Header** (`headerHeight 36`): a back-chevron _or_ mode glyph, then the plain `TextField` (no border/background). Sub-screens (Clipboard, Calculator History) show the back chevron; the launcher shows a magnifying glass. The search icon aligns horizontally with row content, and the query with the row titles.
+- **Header** (`headerHeight 36`): the plain `TextField` (no border/background), behind a back chevron on sub-screens (Clipboard, Calculator History). The launcher shows its prompt alone, starting on the row icons' column; a sub-screen's chevron takes that column, and its query starts on the row titles'.
 - **Compact bar** (`compactHeight 56`, a full capsule; the expanded panel keeps `panel 26`): the window itself is bare and the shapes are glass. `CompactBar` draws them behind the header row: a native `.regular` glass `Capsule`, then one round button per enabled configured shortcut (zero to four; Clipboard History, Emoji & Symbols, Search Files and Search Quicklinks by default), so the capsule takes whatever width they leave, and the row is narrowed to match. On every summon the capsule starts at full width and pulls back with an undershoot while each button, parked small inside its end, beads out a beat after the last; its glyph blurs in once the glass has formed. The compact bar lays `panelScrim` over its glass through a mask of the same animated shapes, so it matches the expanded panel's surface; the selected button stays out of the mask, so its tint reads undimmed. Keyboard selection tints the existing glass circle and uses a white monochrome glyph; the system material draws the face and contour together, without an overlaid fill or stroke. Activation runs its command synchronously with animations disabled, so no shortcut shapes animate beneath the expanded panel. Leaving fades the bar whole; it parks again after the window has gone. The glass shapes share one `GlassEffectContainer`, and `Theme.CompactBarMotion` holds every value. With **Show animations** off the bar lands at rest: `motionScope()` strips its springs, and the park wait runs through `Motion.duration(_:)`. The glyphs sit above the container, never inside it, where a morph would smear them, and the header row sits outside it, because a container paints its merged glass over any loose content within. The window keeps its native shadow in both modes so the glass shapes remain distinct against light backgrounds. That shadow follows the window's alpha, and on macOS 26 the glass casts a soft shadow of its own, reaching about 44 points below the bar; left alone, the window would trace it as a hairline ring and, where the window's edge cuts it off, a pale rectangle. So while `Theme.glassCastsShadow` holds, the container is masked to the same animated shapes as the scrim, leaving the window's shadow only the capsule and its buttons to trace, and the bar calls `invalidateShadow()` once its springs settle, because the window cuts its shadow from the shapes it first drew, before the buttons beaded out. Otherwise the container stays unmasked: any mask, even one filling its frame, also clips the contour glass draws past its shape, flattening the bar's ends.
 - **Compact keyboard entry:** pressing `↓` in the collapsed launcher expands the results and selects the first row without replacing or defocusing the shared search field.
 - **Bottom bar** (`bottomBarHeight 52`): a menu circle on the left, the action group on the right, both floating glass, no bar background. The action group is one glass `Capsule` holding the primary-action pill (label + `↵`) and the Actions toggle (`⌘K`). `UpdatePill` sits beside the menu circle while an update is in hand: a `menuButton`-tall capsule of natively tinted glass, `progress` until the update is ready, then `success`, or `destructive` on failure. An extension toast covers both. In the compact bar, which has no footer, the same pill ends the header row. See [features/updates.md](features/updates.md).

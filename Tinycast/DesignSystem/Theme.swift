@@ -91,7 +91,7 @@ enum Theme {
         /// Nine points crowds the palette's 26-point corner, so Notes seats its lights further in.
         static let noteTrafficLightInset: CGFloat = 20
         /// Fraction of visible height above the palette's top edge; it grows downward.
-        static let paletteTopMarginFraction: CGFloat = 0.18
+        static let paletteTopMarginFraction: CGFloat = 0.25
         /// The search row; padded alike above and below, it is the compact bar's whole height.
         static let headerHeight: CGFloat = 36
         /// Fixed slot for the header glyph, so the field starts at one x in every mode.
@@ -375,7 +375,7 @@ enum Theme {
 
     enum Typography {
         /// One size, two frameworks: `TextTrailingDragHandle` measures what the field renders.
-        static let searchFieldSize: CGFloat = 20
+        static let searchFieldSize: CGFloat = 16
         static let searchField = Font.system(size: searchFieldSize, weight: .regular)
         /// `NSFont` is not `Sendable`, hence the isolation; every reader is a view anyway.
         @MainActor static let searchFieldNSFont = NSFont.systemFont(

@@ -60,7 +60,7 @@ enum PaletteMode: String, CaseIterable, Identifiable {
     }
     var placeholder: String {
         switch self {
-        case .launcher: return String(localized: "Search for apps and commands…")
+        case .launcher: return String(localized: "Search for anything…")
         case .clipboard: return String(localized: "Type to filter entries…")
         case .ai: return String(localized: "Ask anything…")
         case .aiHistory: return String(localized: "Search chats…")
