@@ -1,3 +1,12 @@
+> [!NOTE]
+> **This is a personal fork** of [abue-ammar/tinycast](https://github.com/abue-ammar/tinycast), kept
+> in step with it and carrying a few changes of my own. For official releases and support, use the
+> original project. The fork adds:
+> [colour themes](docs/features/themes.md) (15 built-in, such as Tokyo Night, Catppuccin, Gruvbox
+> and Nord, plus your own JSON themes in `~/.config/tinycast/themes/`, chosen separately for light
+> and dark); a choice of interface font, corner roundness, window opacity and blur; and a plainer
+> launcher search bar (text only, opening a quarter of the way down the screen).
+
 <h1 align="center">
   <a href="https://tinycast.dev"><img src="docs/images/icon.png" alt="Tinycast app icon" width="128" height="128"></a><br>
   Tinycast
